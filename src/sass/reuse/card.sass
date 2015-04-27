@@ -1,0 +1,59 @@
+.cards
+  max-width: 32rem
+  margin: auto
+
+// .has-expanded-card
+//   .card
+//     opacity: .4
+//   .card--expanded
+//     opacity: 1
+
+.card
+  margin: 1rem
+
+.card-extra
+  display: none
+
+.card--expanded .card-extra
+  display: block
+
+.card--archived
+  opacity: .4
+
+.card-body
+  background-color: hsla(0,0,0,.5)
+  padding: .5rem 1rem .5rem 0
+  .card--track &,
+  .card--message &
+    background-color: transparent
+
+.card-progress
+  height: .25rem
+  margin: .5rem .25rem .5rem 0
+  &:last-child
+    margin-right: 0
+
+.card-progress-counter
+  padding-left: 1rem
+  a
+    border-bottom: 1px solid white
+    padding: 0 .25rem
+
+.card-description
+  white-space: pre-wrap
+
+.card-expand-button
+  padding-left: 0
+  padding-right: 0
+  &:hover:before,
+  &:focus:before
+    opacity: 0
+
+.card--message .card-body
+  padding: .5rem .5rem .5rem 0
+
+.card-markasread
+  display: inline
+  border: 0
+  padding: 0 .5rem
+  vertical-align: baseline
