@@ -34,7 +34,7 @@ gulp.task('styles', function() {
 });
 
 gulp.task('browserify', function() {
-  return gulp.src('src/scripts/app.jsx')
+  return gulp.src(['src/scripts/coach/App.jsx'])
     .pipe($.plumber({errorHandler: $.notify.onError("Browserify Error: <%= error.message %>")}))
     .pipe($.browserify({
       noparse: ['react/addons', 'kefir', 'lodash'],

@@ -46,7 +46,7 @@
     "replace-ext": "0.0.1",
     "route-pattern": "0.0.6",
     "run-sequence": "^1.0.2",
-    "tcomb": "^1.0.1",
+    "tcomb-validation": "^1.0.3",
     "vinyl": "^0.4.6",
     "vinyl-source-stream": "^1.0.0"
   },
