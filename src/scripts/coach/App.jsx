@@ -13,13 +13,13 @@ test.log('test');
 
 // Parse.User.logIn('igeeko@gmail.com', '123');
 
-var utils = require('../common/utils.js').call();
+var dataAPI = require('../common/dataAPI.js').call();
 
 
 
 // if (Parse.User.current()) {
 // //   console.log(Parse.User.current());
-//   utils.createUser('shannon.shaw66@example.com', 'Shannon Shaw', 'coolman');
+//   dataAPI.createUser('shannon.shaw66@example.com', 'Shannon Shaw', 'coolman');
 // } else {
 //   Parse.User.logIn('igeeko@gmail.com', '123');
 //   console.log('try login');
@@ -27,7 +27,7 @@ var utils = require('../common/utils.js').call();
 
 
 
-// utils.getAllUsers(test);
+// dataAPI.getAllUsers(test);
 
 
 // title: t.union(t.Str, t.Nil),
@@ -45,14 +45,14 @@ var utils = require('../common/utils.js').call();
 //   publishAt: new Date(),
 //   createdBy: 'DNnqLfNFyp'
 // };
-// utils.createGoal(goal, ['DNnqLfNFyp', '14GsPxH5E8']);
+// dataAPI.createGoal(goal, ['DNnqLfNFyp', '14GsPxH5E8']);
 
 // var finishAt = moment('May 20 2015', 'MMM DD YYYY').toDate();
 // var publishAt = moment('May 2 2015', 'MMM DD YYYY').toDate();
 //
-// utils.updateGoal('ncuBMJmXnS', {finishAt: finishAt, publishAt: publishAt});
+// dataAPI.updateGoal('ncuBMJmXnS', {finishAt: finishAt, publishAt: publishAt});
 
-// utils.removeGoal('ncuBMJmXnS');
+// dataAPI.removeGoal('ncuBMJmXnS');
 
 // var goals = [
 //   {
@@ -83,28 +83,28 @@ var utils = require('../common/utils.js').call();
 //
 // _.forEach(goals, function(goal) {
 //   console.log(goal, 'attempt to create a goal');
-//   utils.createGoal(goal, ['DNnqLfNFyp', '14GsPxH5E8']);
+//   dataAPI.createGoal(goal, ['DNnqLfNFyp', '14GsPxH5E8']);
 // });
 
-// utils.removeGoal('oKbExU9jif');
-// utils.addGoalRecipients('j4KR9eVn1D', ['DNnqLfNFyp', '14GsPxH5E8']);
-// utils.removeGoalRecipients('j4KR9eVn1D', ['DNnqLfNFyp', '14GsPxH5E8']);
-// utils.removeAllGoalRecipients('j4KR9eVn1D');
+// dataAPI.removeGoal('oKbExU9jif');
+// dataAPI.addGoalRecipients('j4KR9eVn1D', ['DNnqLfNFyp', '14GsPxH5E8']);
+// dataAPI.removeGoalRecipients('j4KR9eVn1D', ['DNnqLfNFyp', '14GsPxH5E8']);
+// dataAPI.removeAllGoalRecipients('j4KR9eVn1D');
 
-// utils.removeGoal('uWr48aZJjA');
+// dataAPI.removeGoal('uWr48aZJjA');
 
 // var date = moment('May 1 2015', 'MMM D YYYY').toDate();
-// utils.addGoalRecipients('uzDPWWT0vF', ['DNnqLfNFyp', '14GsPxH5E8']);
-// utils.getActiveGoalsByRecipientBeforeDate(test, 'DNnqLfNFyp', date);
-// utils.removeAllSubmissionsByGoal('R0ey9cO3tZ');
+// dataAPI.addGoalRecipients('uzDPWWT0vF', ['DNnqLfNFyp', '14GsPxH5E8']);
+// dataAPI.getActiveGoalsByRecipientBeforeDate(test, 'DNnqLfNFyp', date);
+// dataAPI.removeAllSubmissionsByGoal('R0ey9cO3tZ');
 
-// utils.removeGoal('rEZstCtI5Z');
+// dataAPI.removeGoal('rEZstCtI5Z');
 
 // window.addEventListener('load', function() {
 //   var f = document.getElementById('form');
 //
 //   f.addEventListener('submit', function(event) {
-//     utils.createSubmission('uzDPWWT0vF', {
+//     dataAPI.createSubmission('uzDPWWT0vF', {
 //       createdBy: Parse.User.current().id,
 //       message: 'some kind of message',
 //       file: document.getElementById('input').files[0]
@@ -115,6 +115,25 @@ var utils = require('../common/utils.js').call();
 
 
 var App = React.createClass({
+  createMessages: function(event) {
+    event.preventDefault();
+    var messages = [
+      {
+        title: 'some kind of title',
+        message: 'some kind of message',
+        publishAt: moment('May 1 2015', 'MMM DD YYYY').toDate(),
+        createdBy: Parse.User.current().id
+      },
+      {
+        message: 'some kind of another message',
+        publishAt: moment('May 1 2015', 'MMM DD YYYY').toDate(),
+        createdBy: Parse.User.current().id
+      }
+    ];
+    _.forEach(messages, function(message) {
+      dataAPI.createMessage(message, ['DNnqLfNFyp', '14GsPxH5E8']);
+    });
+  },
   createGoal: function(event) {
     event.preventDefault();
     var goals = [
@@ -145,21 +164,21 @@ var App = React.createClass({
     ];
 
     _.forEach(goals, function(goal) {
-      utils.createGoal(goal, ['DNnqLfNFyp', '14GsPxH5E8']);
+      dataAPI.createGoal(goal, ['DNnqLfNFyp', '14GsPxH5E8']);
     });
 
   },
   removeGoal: function(event) {
     event.preventDefault();
-    utils.removeGoal('qlv7Kod7Ep');
+    dataAPI.removeGoal('qlv7Kod7Ep');
   },
   removeSubmission: function(event) {
     event.preventDefault();
-    utils.removeSubmission('1biOvxfLoo');
+    dataAPI.removeSubmission('1biOvxfLoo');
   },
   onSubmit: function(event) {
     event.preventDefault();
-    utils.createSubmission('LMpugZLoAr', {
+    dataAPI.createSubmission('LMpugZLoAr', {
       createdBy: Parse.User.current().id,
       message: 'some kind of message',
       file: this.refs.file.getDOMNode().files[0]
@@ -186,6 +205,11 @@ var App = React.createClass({
         <button type='button' onClick={this.createGoal}>
           Create Goal
         </button>
+        <br />
+        <br />
+        <button type='button' onClick={this.createMessages}>
+          Create Messages
+        </button>
       </div>
     );
   }
@@ -193,7 +217,7 @@ var App = React.createClass({
 
 React.render(<App />, document.getElementById('app'));
 
-utils.createUsersFromText('test@test.com, somUser, blob123 \n turbo@toru.com, blah blah, blobblob');
+dataAPI.createUsersFromText('test@test.com, somUser, blob123 \n turbo@toru.com, blah blah, blobblob');
 
-// utils.addGoalRecipients('8h13P1wZFP', ['DNnqLfNFyp', '14GsPxH5E8']);
-// utils.removeGoalRecipients('8h13P1wZFP', ['DNnqLfNFyp']);
+// dataAPI.addGoalRecipients('8h13P1wZFP', ['DNnqLfNFyp', '14GsPxH5E8']);
+// dataAPI.removeGoalRecipients('8h13P1wZFP', ['DNnqLfNFyp']);

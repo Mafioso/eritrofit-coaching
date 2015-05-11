@@ -10,7 +10,7 @@
   "latedef": true,
   "newcap": true,
   "noarg": true,
-  "predef": [ "React", "Parse" ],
+  "predef": [ "React", "Parse", "DataAPI" ],
   "regexp": true,
   "undef": true,
   "unused": true,

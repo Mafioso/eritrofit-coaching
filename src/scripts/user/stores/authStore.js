@@ -2,23 +2,17 @@
 
 var authActionstreams = require('../streams/authStreams').actionstreams;
 var authDatastreams = require('../streams/authStreams').datastreams;
-var Store = require('./Store');
+var Store = require('../../common/Store');
 
 
 var authStore = new Store(function() {
 
   authActionstreams.logIn.onValue(function(payload) {
-    console.log('login recieved payload', payload);
-    Parse.User.logIn(payload.username, payload.password).then(
-      function(user) {
-        console.log('success!');
-        authDatastreams.result.emit(user);
-      },
-      function(error) {
-        console.log('login error', error);
-        authDatastreams.result.error(error);
-      }
-    );
+    Parse.User.logIn(payload.username, payload.password).then(function(user) {
+      authDatastreams.result.emit(user);
+    }, function(error) {
+      authDatastreams.result.error(error);
+    });
   });
 
   authActionstreams.resetPassword.onValue(function(payload) {
