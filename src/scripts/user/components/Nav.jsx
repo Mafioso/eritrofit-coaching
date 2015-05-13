@@ -54,11 +54,10 @@ var Nav = React.createClass({
           <div>
             <div
               onClick={this.toggleMode}
-              className='0 bg-white muted z2'
+              className='bg-white muted z2'
               style={{
                 width: '100vw',
-                height: '100vh',
-                top: '3.125rem'
+                height: '100vh'
               }} />
             <div
               className='absolute right-0 bottom-0 gray bg-white overflow-hidden z3 ml4 border-left'

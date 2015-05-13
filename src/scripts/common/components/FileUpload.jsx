@@ -5,7 +5,8 @@ var FileUpload = React.createClass({
     name: React.PropTypes.string,
     label: React.PropTypes.string,
     getValue: React.PropTypes.func,
-    tabIndex: React.PropTypes.oneOfType([React.PropTypes.string, React.PropTypes.number])
+    tabIndex: React.PropTypes.oneOfType([React.PropTypes.string, React.PropTypes.number]),
+    className: React.PropTypes.string
   },
   getInitialState: function() {
     return {
@@ -29,10 +30,12 @@ var FileUpload = React.createClass({
     });
   },
   onChange: function(event) {
-    this.setState({
-      filename: event.target.files[0].name
-    });
-    this.props.getValue(event.target.files[0]);
+    if (event.target.files[0]) {
+      this.setState({
+        filename: event.target.files[0].name
+      });
+      this.props.getValue(event.target.files[0]);
+    }
   },
   render: function() {
     var filename;
@@ -47,12 +50,18 @@ var FileUpload = React.createClass({
       );
     }
 
+    var className = 'button button-outline blue relative overflow-hidden center';
+
+    if (this.props.className) {
+      className = className + ' ' + this.props.className;
+    }
+
     return (
       <div className='clearfix'>
-        <div className='left'>
+        <div className={'left ' + this.props.className}>
           <div
             style={this.state.buttonStyle}
-            className='button button-outline blue relative overflow-hidden'>
+            className={className}>
             <input
               onFocus={this.onFocus}
               onBlur={this.onBlur}

@@ -15,6 +15,7 @@ var Goals = React.createClass({
     };
   },
   onGoalsListUpdate: function(list) {
+    console.log(list);
     this.setState({data: list, mode: 'DEFAULT'});
   },
   componentWillMount: function() {

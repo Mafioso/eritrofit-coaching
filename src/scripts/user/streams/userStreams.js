@@ -8,7 +8,8 @@ var routerActionstreams = new StreamGroup([
 ]);
 
 var routerDatastreams = new StreamGroup([
-  'result'
+  'result',
+  'pwdResult'
 ]);
 
 module.exports = {

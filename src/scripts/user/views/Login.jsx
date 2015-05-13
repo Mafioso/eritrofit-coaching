@@ -15,7 +15,6 @@ var Login = React.createClass({
     };
   },
   authResultHandler: function(result) {
-    console.log('result', result);
     var self = this;
     routerActionstreams.redirect.emit({
       targetUrl: window.location.hash.substring(1),
@@ -68,7 +67,7 @@ var Login = React.createClass({
           className='p2'
           style={{width: '100%', maxWidth: '18rem', margin: 'auto'}}>
 
-          <div className='login-logo silver mb3'>
+          <div className='login-logo gray mb3'>
             <Icon name='eritrofit' />
           </div>
 

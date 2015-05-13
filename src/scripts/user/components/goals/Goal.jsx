@@ -15,30 +15,15 @@ var Goal = React.createClass({
     description: React.PropTypes.string,
     submissions: React.PropTypes.array,
     submissionStates: React.PropTypes.object,
-    finishAt: React.PropTypes.instanceOf(Date)
+    finishAt: React.PropTypes.instanceOf(Date),
+    showCreateSubmissionModal: React.PropTypes.func
   },
-  getInitialState: function() {
-    return {
-      mode: 'DEFAULT'
-    };
-  },
-  toggleMode: function(event) {
-    event.preventDefault();
-
-    switch(this.state.mode) {
-      case 'DEFAULT':
-        this.setState({mode: 'EXPANDED'});
-        break;
-      case 'EXPANDED':
-        this.setState({mode: 'DEFAULT'});
-        break;
-      default:
-        break;
-    }
+  showCreateSubmissionModal: function() {
+    this.props.showCreateSubmissionModal(this.props.goalId);
   },
   render: function() {
+    var finishAt = moment(this.props.finishAt).fromNow();
 
-    var finishAt = moment(finishAt).fromNow();
     var numberOfApprovedSubmissions = 0;
     var cardProgress = _.map(this.props.submissions, function(submission) {
       if (this.props.submissionStates[submission.id]) {
@@ -68,24 +53,20 @@ var Goal = React.createClass({
       );
     }
 
-    var cardClassName = classNames('card', 'bg-cover', 'bg-center', 'rounded',
-      {
-        'card--expanded': this.state.mode === 'EXPANDED'
-      }
-    );
+    var cardClassName = classNames('card bg-cover overflow-hidden bg-center rounded');
 
     return(
       <div
         className={ cardClassName }
         style={{ backgroundImage: 'url('+ this.props.cover +')' }}
         >
-        <div className='clearfix card-body rounded'>
+        <div className='clearfix card-body rounded-top'>
           <div className='left'>
             <Icon name='fitness' />
           </div>
           <div className='overflow-hidden white'>
             <div className='flex flex-baseline'>
-              <div className='h3 flex-auto'>
+              <div className='h3 bold flex-auto'>
                   { this.props.title }
               </div>
               <div className='right-align card-progress-counter flex-none'>
@@ -97,27 +78,19 @@ var Goal = React.createClass({
             <div className='flex'>
               { cardProgress }
             </div>
-            <div className='h6 flex flex-wrap flex-baseline mb1'>
-              <div className='flex-auto mr1'>
-                { finishAt }
-              </div>
+            <div className='h6 mb1 card-description'>
+              { this.props.description }
             </div>
-            <div className='card-extra'>
-              <div className='card-description'>{this.props.description}</div>
-              <div className='center mb1'>
-                <button className='button-outline white full-width' type='button'>
-                  Загрузить результат
-                </button>
-              </div>
-            </div>
-            <div className='mb1'>
-              <button
-                onClick={this.toggleMode}
-                type='button'
-                className='button-transparent card-expand-button'>
-                •••
-              </button>
-            </div>
+          </div>
+        </div>
+        <div className='h6 bg-white rounded-bottom flex flex-center'>
+          <div className='py1 px2 gray flex-none'>
+            Финиш { finishAt }
+          </div>
+          <div className='flex-auto py1 px2 right-align'>
+            <button onClick={this.showCreateSubmissionModal} className='button-small button-outline blue' type='button'>
+              Загрузить результат
+            </button>
           </div>
         </div>
       </div>

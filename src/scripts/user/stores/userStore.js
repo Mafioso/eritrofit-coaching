@@ -7,12 +7,11 @@ var userDatastreams = require('../streams/userStreams').datastreams;
 var userStore = new Store(function() {
 
   userActionstreams.saveUserInfo.onValue(function(props) {
-    console.log(props);
     DataAPI.updateCurrentUser(userDatastreams.result, props);
   });
 
   userActionstreams.savePassword.onValue(function(props) {
-    console.log(props);
+    DataAPI.updateCurrentUserPassword(userDatastreams.pwdResult, props);
   });
 
 });

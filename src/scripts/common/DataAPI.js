@@ -8,7 +8,6 @@ var dataAPI = function() {
   var instance = window.dataAPI;
 
   if (_.isEmpty(instance)) {
-    console.log('EMPTY DATAAPI INSTANCE!');
     // contains methods to put necessary information to a provided stream
     instance = {
 
@@ -129,8 +128,6 @@ var dataAPI = function() {
           return x instanceof File;
         });
 
-        console.log('recieved props', props);
-
         if (t.validate(props.fullname, t.Str).isValid()) {
           user.set('fullname', props.fullname);
         }
@@ -165,8 +162,7 @@ var dataAPI = function() {
             }
 
             if (t.validate(props.userpic, FileType).isValid()) {
-              console.log('valid userpic');
-              user.set('userpic', props.userpic);
+              user.set('userpic', new Parse.File('original.jpg', props.userpic));
             }
 
             return user.save();
@@ -183,6 +179,39 @@ var dataAPI = function() {
             stream.error(error);
           }
         );
+      },
+      updateCurrentUserPassword: function(stream, props) {
+        var user = Parse.User.current();
+
+        var predicate = function(x) {
+          return x.length >= 6;
+        };
+
+        var PwdStrType = t.subtype(t.Str, predicate);
+
+        var PasswordType = t.struct({
+          newPassword: PwdStrType,
+          newPasswordAgain: PwdStrType
+        });
+
+        if (t.validate(props, PasswordType).isValid()) {
+          if (props.newPassword === props.newPasswordAgain) {
+            user.setPassword(props.newPassword);
+            user.save().then(
+              function(result) {
+                stream.emit(result);
+              },
+              function(error) {
+                stream.error(error);
+              }
+            );
+          } else {
+            stream.error('passwords should match');
+          }
+        } else {
+          stream.error(t.validate(props, PasswordType).errors);
+        }
+
       },
       updatePassword: function(userId, props) {
         var PasswordType = t.struct({
@@ -263,7 +292,7 @@ var dataAPI = function() {
 
             u.id = goal.createdBy;
 
-            g.set('cover', goal.cover);
+            g.set('cover', new Parse.File('original.jpg', goal.cover));
             g.set('title', goal.title);
             g.set('description', goal.description);
             g.set('submissionsCap', goal.submissionsCap);
@@ -311,7 +340,7 @@ var dataAPI = function() {
           function(goal) {
 
             if (t.validate(props.cover, FileType).isValid()) {
-              goal.set('cover', props.cover);
+              goal.set('cover', new Parse.File('original.jpg', props.cover));
             }
 
             if (t.validate(props.title, t.Str).isValid()) {

@@ -6,6 +6,7 @@ var routerActionstreams = require('../../streams/routerStreams').actionstreams;
 var routerStore = require('../../stores/routerStore');
 var Userpic = require('../../../common/components/Userpic.jsx');
 var FileUpload = require('../../../common/components/FileUpload.jsx');
+var Preloader = require('../../../common/components/Preloader.jsx');
 
 var tabIndex=3;
 
@@ -17,11 +18,16 @@ var UserInfo = React.createClass({
   getInitialState: function() {
     return {
       error: '',
-      userpic: {}
+      userpic: {},
+      loading: false
     };
   },
   onSubmit: function(event) {
     event.preventDefault();
+
+    this.setState({
+      loading: true
+    });
 
     userActionstreams.saveUserInfo.emit({
       fullname: this.refs.fullname.getDOMNode().value,
@@ -34,8 +40,10 @@ var UserInfo = React.createClass({
       userpic: userpic
     });
   },
-  onSubmitResult: function(result) {
-    console.log(result);
+  onSubmitResult: function() {
+    this.setState({
+      loading: false
+    });
     // reload the page here
     var self = this;
     routerActionstreams.redirect.emit({
@@ -47,7 +55,8 @@ var UserInfo = React.createClass({
   onSubmitError: function(error) {
     // set the error message here
     this.setState({
-      error: error
+      error: error,
+      loading: false
     });
   },
   componentWillMount: function() {
@@ -60,6 +69,7 @@ var UserInfo = React.createClass({
   },
   render: function() {
     var error;
+    var preloader;
 
     if (this.state.error) {
       error = (
@@ -67,6 +77,10 @@ var UserInfo = React.createClass({
           {this.state.error}
         </div>
       );
+    }
+
+    if (this.state.loading) {
+      preloader = (<Preloader />);
     }
 
     return (
@@ -80,6 +94,7 @@ var UserInfo = React.createClass({
               Полное имя
             </label>
             <input
+              autoComplete='false'
               tabIndex={tabIndex}
               ref='fullname'
               id='fullname'
@@ -118,7 +133,7 @@ var UserInfo = React.createClass({
                 tabIndex={tabIndex}
                 className='button bg-gray'
                 type='submit'>
-                Сохранить
+                {preloader} Сохранить
               </button>
             </div>
           </div>
