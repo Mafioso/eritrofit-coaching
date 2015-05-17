@@ -1,23 +1,139 @@
 'use strict';
 
+var createSubmission = require('../../streams/goalsStreams.js').actionstreams.createSubmission;
+var createSubmissionResult = require('../../streams/goalsStreams.js').datastreams.createSubmissionResult;
 var FileUpload = require('../../../common/components/FileUpload.jsx');
+var Preloader = require('../../../common/components/Preloader.jsx');
 var tabIndex = 1;
 
 var CreateSubmissionModal = React.createClass({
   propTypes: {
-    goalId: React.PropTypes.string
+    goalId: React.PropTypes.string,
+    authorId: React.PropTypes.string,
+    closeModal: React.PropTypes.func
+  },
+  getInitialState: function() {
+    return {
+      selectedFile: null,
+      error: '',
+      mode: 'DEFAULT'
+    };
+  },
+  updateSelectedFile: function(file) {
+    this.setState({
+      selectedFile: file
+    });
+  },
+  onSubmit: function(event) {
+    event.preventDefault();
+    this.setState({
+      mode: 'LOADING'
+    });
+    createSubmission.emit({
+      goalId: this.props.goalId,
+      text: this.refs.text.getDOMNode().value,
+      file: this.state.selectedFile,
+      createdBy: this.props.authorId
+    });
+  },
+  submissionResultHandler: function() {
+    this.setState({
+      error: '',
+      mode: 'SUCCESS'
+    });
+  },
+  submissionErrorHandler: function() {
+    this.setState({
+      error: 'Обязательно выберите фото для загрузки',
+      mode: 'DEFAULT'
+    });
   },
   componentWillMount: function() {
     document.body.className += ' overflow-hidden';
+
+    createSubmissionResult.onValue(this.submissionResultHandler);
+    createSubmissionResult.onError(this.submissionErrorHandler);
   },
   componentWillUnmount: function() {
     document.body.className = document.body.className.replace(/\boverflow-hidden\b/, '');
+
+    createSubmissionResult.offValue(this.submissionResultHandler);
+    createSubmissionResult.offError(this.submissionErrorHandler);
   },
   render: function() {
+
+    var error;
+    var cancelButton;
+    var submitButton;
+
+    if (this.state.error) {
+      error = (
+        <div className='red h5 mb2 center'>
+          {this.state.error}
+        </div>
+      );
+    }
+
+    switch (this.state.mode) {
+      case 'DEFAULT':
+        submitButton = (
+          <div className='center mb1'>
+            <button
+              tabIndex={tabIndex}
+              className='rounded bg-blue white'
+              type='submit'>
+              Сохранить
+            </button>
+          </div>
+        );
+        cancelButton = (
+          <div className='center'>
+            <button
+              onClick={this.props.closeModal}
+              tabIndex={tabIndex}
+              className='button-small button-transparent h6 gray'
+              type='button'>
+              Отмена
+            </button>
+          </div>
+        );
+        break;
+
+      case 'SUCCESS':
+        submitButton = (
+          <div className='center mb1'>
+            <button
+              onClick={this.props.closeModal}
+              tabIndex={tabIndex}
+              className='rounded bg-green white'
+              type='button'>
+              Готово
+            </button>
+          </div>
+        );
+        break;
+
+      case 'LOADING':
+        submitButton = (
+          <div className='center mb1'>
+            <button
+              disabled={true}
+              tabIndex={tabIndex}
+              className='rounded bg-blue white'
+              type='button'>
+              <Preloader /> Сохранить
+            </button>
+          </div>
+        );
+        break;
+
+      default:
+        break;
+    }
+
     return (
       <div>
         <div
-          onClick={this.toggleMode}
           className='bg-white muted z2'
           style={{
             width: '100vw',
@@ -31,7 +147,7 @@ var CreateSubmissionModal = React.createClass({
 
             <div className='h2 center'>Загрузка результата</div>
 
-            <form>
+            <form onSubmit={this.onSubmit}>
 
               <div className='mb1'>
                 <label
@@ -43,7 +159,7 @@ var CreateSubmissionModal = React.createClass({
                   name='userpic'
                   label='Загрузить фотографию'
                   tabIndex={tabIndex}
-                  getValue=''
+                  getValue={this.updateSelectedFile}
                   />
               </div>
 
@@ -53,27 +169,14 @@ var CreateSubmissionModal = React.createClass({
                   Комментарий
                 </label>
                 <textarea
+                  ref='text'
                   tabIndex={tabIndex}
                   className='field-light full-width fit' />
               </div>
 
-              <div className='center mb1'>
-                <button
-                  tabIndex={tabIndex}
-                  className='rounded bg-blue white'
-                  type='submit'>
-                  Сохранить
-                </button>
-              </div>
-
-              <div className='center'>
-                <button
-                  tabIndex={tabIndex}
-                  className='button-small button-transparent h6 gray'
-                  type='button'>
-                  Отмена
-                </button>
-              </div>
+              {error}
+              {submitButton}
+              {cancelButton}
 
             </form>
 

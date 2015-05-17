@@ -9,7 +9,8 @@ var GoalsList = React.createClass({
   propTypes: {
     goals: React.PropTypes.array,
     submissions: React.PropTypes.object,
-    submissionStates: React.PropTypes.object
+    submissionStates: React.PropTypes.object,
+    currentUser: React.PropTypes.string
   },
   getInitialState: function() {
     return {
@@ -19,9 +20,22 @@ var GoalsList = React.createClass({
   showCreateSubmissionModal: function(goalId) {
     this.setState({goalId: goalId});
   },
+  closeCreateSubmissionModal: function(event) {
+    event.preventDefault();
+    this.setState({goalId: ''});
+  },
   render: function() {
     var self = this;
+    var modal;
 
+    if (this.state.goalId) {
+      modal = (
+        <CreateSubmissionModal
+          closeModal={this.closeCreateSubmissionModal}
+          goalId={this.state.goalId}
+          authorId={this.props.currentUser} />
+      );
+    }
 
     var body = _.map(this.props.goals, function(goal) {
       return (
@@ -46,7 +60,7 @@ var GoalsList = React.createClass({
         {body}
         {this.state.goalId}
         <Portal>
-          <CreateSubmissionModal />
+          {modal}
         </Portal>
       </div>
     );

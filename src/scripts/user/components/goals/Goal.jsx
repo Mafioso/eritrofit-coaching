@@ -23,10 +23,11 @@ var Goal = React.createClass({
   },
   render: function() {
     var finishAt = moment(this.props.finishAt).fromNow();
+    var self = this;
 
     var numberOfApprovedSubmissions = 0;
     var cardProgress = _.map(this.props.submissions, function(submission) {
-      if (this.props.submissionStates[submission.id]) {
+      if (self.props.submissionStates[submission.id].get('isApproved')) {
         // submission is approved
         numberOfApprovedSubmissions = numberOfApprovedSubmissions + 1;
         return (
@@ -53,37 +54,35 @@ var Goal = React.createClass({
       );
     }
 
-    var cardClassName = classNames('card bg-cover overflow-hidden bg-center rounded');
-
     return(
-      <div
-        className={ cardClassName }
-        style={{ backgroundImage: 'url('+ this.props.cover +')' }}
-        >
-        <div className='clearfix card-body rounded-top'>
-          <div className='left'>
-            <Icon name='fitness' />
-          </div>
-          <div className='overflow-hidden white'>
-            <div className='flex flex-baseline'>
-              <div className='h3 bold flex-auto'>
-                  { this.props.title }
-              </div>
-              <div className='right-align card-progress-counter flex-none'>
-                <a className='white' href={'/#/goals/' + this.props.goalId }>
-                  { numberOfApprovedSubmissions } / { this.props.numberOfTotalSubmissions }
-                </a>
-              </div>
+      <div className='card overflow-hidden rounded'>
+        <div className='rounded-top bg-cover bg-center'
+          style={{ backgroundImage: 'url('+ this.props.cover +')' }}>
+          <div className='clearfix card-body rounded-top'>
+            <div className='left'>
+              <Icon name='fitness' />
             </div>
-            <div className='flex'>
-              { cardProgress }
-            </div>
-            <div className='h6 mb1 card-description'>
-              { this.props.description }
+            <div className='overflow-hidden white'>
+              <div className='flex flex-baseline'>
+                <div className='h3 bold flex-auto'>
+                    { this.props.title }
+                </div>
+                <div className='right-align card-progress-counter flex-none'>
+                  <a className='white' href={'/#/goals/' + this.props.goalId }>
+                    { numberOfApprovedSubmissions } / { this.props.numberOfTotalSubmissions }
+                  </a>
+                </div>
+              </div>
+              <div className='flex'>
+                { cardProgress }
+              </div>
+              <div className='h6 mb1 card-description'>
+                { this.props.description }
+              </div>
             </div>
           </div>
         </div>
-        <div className='h6 bg-white rounded-bottom flex flex-center'>
+        <div className='h6 bg-white rounded-bottom flex flex-center flex-wrap'>
           <div className='py1 px2 gray flex-none'>
             Финиш { finishAt }
           </div>
@@ -91,6 +90,9 @@ var Goal = React.createClass({
             <button onClick={this.showCreateSubmissionModal} className='button-small button-outline blue' type='button'>
               Загрузить результат
             </button>
+          </div>
+          <div className='full-width'>
+            {this.props.children}
           </div>
         </div>
       </div>

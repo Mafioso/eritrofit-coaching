@@ -8,8 +8,22 @@ var goalsStore = new Store(function() {
 
   goalsActionstreams.getActiveGoals.onValue(function(conf) {
 
-    DataAPI.getActiveGoalsByRecipientBeforeDate(goalsDatastreams.list, conf.recipientId, conf.date);
+    DataAPI.getActiveGoalsByRecipientBeforeDate(goalsDatastreams.getActiveGoalsResult, conf.recipientId, conf.date);
 
+  });
+
+  goalsActionstreams.createSubmission.onValue(function(conf) {
+
+    DataAPI.createSubmission(goalsDatastreams.createSubmissionResult, conf.goalId, conf);
+
+  });
+
+  goalsActionstreams.getGoal.onValue(function(conf) {
+    DataAPI.getGoalById(goalsDatastreams.getGoalResult, conf.recipientId, conf.goalId);
+  });
+
+  goalsActionstreams.removeSubmission.onValue(function(conf) {
+    DataAPI.removeSubmission(conf.submissionId);
   });
 
 });

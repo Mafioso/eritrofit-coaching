@@ -12,6 +12,7 @@ var _ = require('lodash');
 var fastclick = require('fastclick');
 
 //////////////////////////////// VIEWS ///////////////////////////////
+var GoalDetails = require('./views/GoalDetails.jsx');
 var Goals = require('./views/Goals.jsx');
 var Login = require('./views/Login.jsx');
 var LoginResetPassword = require('./views/LoginResetPassword.jsx');
@@ -88,6 +89,9 @@ var App = React.createClass({
         break;
       case routerStore.views.GOALS:
         view = (<Goals params={params} />);
+        break;
+      case routerStore.views.GOAL_DETAILS:
+        view = (<GoalDetails params={params} />);
         break;
       case routerStore.views.MESSAGES:
         view = (<div>MESSAGES</div>)

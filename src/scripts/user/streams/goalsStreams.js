@@ -3,11 +3,17 @@
 var StreamGroup = require('../../common/StreamGroup');
 
 var goalsActionstreams = new StreamGroup([
-  'getActiveGoals'
+  'getActiveGoals',
+  'createSubmission',
+  'getGoal',
+  'removeSubmission'
 ]);
 
 var goalsDatastreams = new StreamGroup([
-  'list'
+  'getActiveGoalsResult',
+  'createSubmissionResult',
+  'getGoalResult',
+  'removeSubmissionResult'
 ]);
 
 module.exports = {

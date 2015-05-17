@@ -6,6 +6,7 @@ var GoalsList = require('../components/goals/GoalsList.jsx');
 var Nav = require('../components/Nav.jsx');
 var goalsActionstreams = require('../streams/goalsStreams').actionstreams;
 var goalsDatastreams = require('../streams/goalsStreams').datastreams;
+var _ = require('lodash');
 
 var Goals = React.createClass({
   getInitialState: function() {
@@ -15,11 +16,30 @@ var Goals = React.createClass({
     };
   },
   onGoalsListUpdate: function(list) {
-    console.log(list);
     this.setState({data: list, mode: 'DEFAULT'});
   },
+  addSubmissionToState: function(newSubmission) {
+    var data = _.clone(this.state.data);
+    var SubmissionState = Parse.Object.extend('SubmissionState');
+    var submissionState = new SubmissionState();
+
+    submissionState.set('isApproved', false);
+
+    if (data.submissions[newSubmission.get('goal').id]) {
+      data.submissions[newSubmission.get('goal').id].push(newSubmission);
+    } else {
+      data.submissions[newSubmission.get('goal').id] = [newSubmission];
+    }
+
+
+    data.submissionStates[newSubmission.id] = submissionState;
+
+    this.setState({data: data});
+
+  },
   componentWillMount: function() {
-    goalsDatastreams.list.onValue(this.onGoalsListUpdate);
+    goalsDatastreams.getActiveGoalsResult.onValue(this.onGoalsListUpdate);
+    goalsDatastreams.createSubmissionResult.onValue(this.addSubmissionToState);
   },
   componentDidMount: function() {
     // FIRST TIME
@@ -30,7 +50,8 @@ var Goals = React.createClass({
     this.setState({mode: 'LOADING'});
   },
   componentWillUnmount: function() {
-    goalsDatastreams.list.offValue(this.onGoalsListUpdate);
+    goalsDatastreams.getActiveGoalsResult.offValue(this.onGoalsListUpdate);
+    goalsDatastreams.createSubmissionResult.offValue(this.addSubmissionToState);
   },
   componentWillReceiveProps: function() {
     // HANDLE VIEW UPDATES
@@ -86,6 +107,7 @@ var Goals = React.createClass({
               goals={this.state.data.goals}
               submissions={this.state.data.submissions}
               submissionStates={this.state.data.submissionStates}
+              currentUser={this.props.params.currentUser.id}
               />
           );
         }

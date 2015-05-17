@@ -4,8 +4,8 @@ var _ = require('lodash');
 var t = require('tcomb-validation');
 var moment = require('moment');
 
-var dataAPI = function() {
-  var instance = window.dataAPI;
+var DataAPI = function() {
+  var instance = window.DataAPI;
 
   if (_.isEmpty(instance)) {
     // contains methods to put necessary information to a provided stream
@@ -664,7 +664,61 @@ var dataAPI = function() {
         );
       },
 
-      createSubmission: function(goalId, props) {
+      getGoalById: function(stream, recipientId, goalId) {
+
+        var Goal = Parse.Object.extend('Goal');
+        var User = Parse.Object.extend('User');
+        var Submission = Parse.Object.extend('Submission');
+
+        var u = new User();
+        u.id = recipientId;
+
+        var result = {
+          goal: {},
+          submissions: [],
+          submissionStates: {}
+        };
+
+        var goalQuery = new Parse.Query(Goal);
+        goalQuery.get(goalId).then(
+          function(goal) {
+            result.goal = goal;
+            var submissionQuery = new Parse.Query(Submission);
+            submissionQuery.equalTo('goal', goal);
+            submissionQuery.ascending('createdAt');
+            return submissionQuery.find();
+          },
+          function(error) {
+            stream.error(error);
+          }
+        ).then(
+          function(submissions) {
+            result.submissions = submissions;
+
+            var SubmissionState = Parse.Object.extend('SubmissionState');
+            var submissionStateQuery = new Parse.Query(SubmissionState);
+            submissionStateQuery.containedIn('submission', submissions);
+            return submissionStateQuery.find();
+          },
+          function(error) {
+            stream.error(error);
+          }
+        ).then(
+          function(submissionStates) {
+            _.forEach(submissionStates, function(submissionState) {
+              result.submissionStates[submissionState.get('submission').id] = submissionState;
+            });
+
+            stream.emit(result);
+
+          },
+          function(error) {
+            stream.error(error);
+          }
+        );
+      },
+
+      createSubmission: function(stream, goalId, props) {
 
         var FileType = t.irreducible('File', function (x) {
           return x instanceof File;
@@ -702,16 +756,16 @@ var dataAPI = function() {
 
           s.save().then(
             function(submission) {
-              console.log(submission);
+              stream.emit(submission);
             },
             function(error) {
-              console.log(error);
+              stream.error(error);
             }
           );
 
 
         } else {
-          // Error!
+          stream.error(t.validate(props, SubmissionType).firstError());
         }
 
       },
@@ -1476,4 +1530,4 @@ var dataAPI = function() {
   window.DataAPI = instance;
 };
 
-module.exports = dataAPI;
+module.exports = DataAPI;
