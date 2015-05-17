@@ -4,7 +4,7 @@ var _ = require('lodash');
 var t = require('tcomb-validation');
 var moment = require('moment');
 
-var DataAPI = function() {
+var dataAPI = function() {
   var instance = window.DataAPI;
 
   if (_.isEmpty(instance)) {
@@ -1530,4 +1530,4 @@ var DataAPI = function() {
   window.DataAPI = instance;
 };
 
-module.exports = DataAPI;
+module.exports = dataAPI;

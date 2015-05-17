@@ -17,6 +17,7 @@ var Goals = require('./views/Goals.jsx');
 var Login = require('./views/Login.jsx');
 var LoginResetPassword = require('./views/LoginResetPassword.jsx');
 var Settings = require('./views/Settings.jsx');
+var Tracks = require('./views/Tracks.jsx');
 
 /////////////////////////////// STREAMS //////////////////////////////
 var routerActionstreams = require('./streams/routerStreams').actionstreams;
@@ -98,6 +99,9 @@ var App = React.createClass({
         break;
       case routerStore.views.SETTINGS:
         view = (<Settings params={params} />);
+        break;
+      case routerStore.views.TRACKS:
+        view = (<Tracks params={params} />);
         break;
       default:
         view = (<div>
