@@ -58,7 +58,6 @@ var GoalsList = React.createClass({
       <div className='cards'>
         <div style={{marginTop: '4.25rem'}} />
         {body}
-        {this.state.goalId}
         <Portal>
           {modal}
         </Portal>

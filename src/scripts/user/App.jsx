@@ -29,6 +29,7 @@ var routerStore = require('./stores/routerStore');
 require('./stores/authStore');
 require('./stores/goalsStore');
 require('./stores/userStore');
+require('./stores/trackStore');
 
 ///////////////////////////////// APP ////////////////////////////////
 var App = React.createClass({

@@ -17,7 +17,7 @@ var UserSettingsModal = React.createClass({
     var node;
     if (this.props.userSettingsModalIsOpened) {
       // add class to body
-      document.body.className += ' body--stopScroll';
+      document.body.className += ' overflow-hidden';
 
       node = (<TimeoutTransitionGroup
         enterTimeout={100}
@@ -35,7 +35,7 @@ var UserSettingsModal = React.createClass({
       </TimeoutTransitionGroup>);
     } else {
       // remove class from body
-      document.body.className = document.body.className.replace(/\bbody--stopScroll\b/, '');
+      document.body.className = document.body.className.replace(/\boverflow-hidden\b/, '');
     }
 
     return (

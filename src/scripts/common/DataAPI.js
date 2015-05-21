@@ -1522,6 +1522,18 @@ var dataAPI = function() {
             m.destroy();
           }
         );
+      },
+      getDefaultTrackData: function(stream, props) {
+        Parse.Cloud.run('getDefaultTrackData', {
+          date: props.date
+        }).then(
+          function(s) {
+            stream.emit(s);
+          },
+          function(e) {
+            stream.error(e);
+          }
+        );
       }
 
     };
