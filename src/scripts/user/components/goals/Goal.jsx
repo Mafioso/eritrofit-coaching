@@ -82,11 +82,11 @@ var Goal = React.createClass({
             </div>
           </div>
         </div>
-        <div className='h6 bg-white rounded-bottom flex flex-center flex-wrap'>
-          <div className='py1 px2 gray flex-none'>
+        <div className='h6 bg-white rounded-bottom flex flex-center flex-wrap py1'>
+          <div className='px2 gray flex-auto mt1 mb1'>
             Финиш { finishAt }
           </div>
-          <div className='flex-auto py1 px2 right-align'>
+          <div className='flex-none px2 mt1 mb1'>
             <button onClick={this.showCreateSubmissionModal} className='button-small button-outline blue' type='button'>
               Загрузить результат
             </button>
