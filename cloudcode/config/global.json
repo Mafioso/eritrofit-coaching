@@ -1,0 +1,14 @@
+{
+  "global": {
+    "parseVersion": "1.4.2"
+  },
+  "applications": {
+    "Eritrofit": {
+      "applicationId": "4ylwbGhxEbyh0qVaH8i2M59ZsRK07JP7mDK9M5rV",
+      "masterKey": "3vGdhTS3udSqYt04We4LPw1M2u1UTm3VBG1wWy6n"
+    },
+    "_default": {
+      "link": "Eritrofit"
+    }
+  }
+}
