@@ -825,6 +825,8 @@ var dataAPI = function() {
               console.log(error);
             }
           );
+        } else {
+          console.log(t.validate(props, MessageType));
         }
       },
       updateMessage: function(messageId, props) {
@@ -1059,20 +1061,25 @@ var dataAPI = function() {
         }
 
         var result = {
+          umMaps: [],
           messages: [],
-          comments: {}
+          comments: {},
+          messageStates: {}
         };
 
         umMapQuery.find().then(
           function(umMaps) {
+            result.umMaps = umMaps;
             var messageIds = _.map(umMaps, function(umMap) {
+              result.messageStates[umMap.get('message').id] = umMap.get('isReadByUser');
               return umMap.get('message').id;
             });
 
             var messageQuery = new Parse.Query(Message);
             messageQuery.containedIn('objectId', messageIds);
             messageQuery.lessThanOrEqualTo('publishAt', date);
-            messageQuery.ascending('publishAt');
+            messageQuery.descending('publishAt');
+            messageQuery.include('createdBy');
 
             return messageQuery.find();
           },
@@ -1086,7 +1093,8 @@ var dataAPI = function() {
             var commentsQuery = new Parse.Query(Comment);
             commentsQuery.containedIn('message', messages);
             commentsQuery.equalTo('user', u);
-            commentsQuery.descending('createdAt');
+            commentsQuery.ascending('createdAt');
+            commentsQuery.include('createdBy');
 
             return commentsQuery.find();
           },
@@ -1111,48 +1119,65 @@ var dataAPI = function() {
         );
       },
 
-      createComment: function(userId, messageId, props) {
+      markMessagesAsRead: function(umMaps) {
+        _.forEach(umMaps, function(umMap) {
+          umMap.set('isReadByUser', true);
+          umMap.save();
+        });
+      },
+
+      createComment: function(stream, userId, messageId, props) {
         var CommentType = t.struct({
           text: t.Str,
           createdBy: t.Str
         });
 
         if (t.validate(props, CommentType).isValid()) {
+          if (_.trim(props.text).length > 0) {
+            var Comment = Parse.Object.extend('Comment');
+            var Message = Parse.Object.extend('Message');
+            var User = Parse.Object.extend('User');
 
-          var Comment = Parse.Object.extend('Comment');
-          var Message = Parse.Object.exnted('Message');
-          var User = Parse.Object.extend('User');
+            var c = new Comment();
+            var m = new Message();
+            var u = new User();
+            var createdBy = new User();
 
-          var c = new Comment();
-          var m = new Message();
-          var u = new User();
-          var createdBy = new User();
+            u.id = userId;
+            m.id = messageId;
+            createdBy.id = props.createdBy;
 
-          u.id = userId;
-          m.id = messageId;
-          createdBy.id = props.createdBy;
+            c.set('user', u);
+            c.set('message', m);
+            c.set('text', props.text);
+            c.set('createdBy', createdBy);
 
-          c.set('user', u);
-          c.set('message', m);
-          c.set('text', props.text);
-          c.set('createdBy', createdBy);
+            var cACL = new Parse.ACL();
+            cACL.setReadAccess(u, true);
+            cACL.setWriteAccess(createdBy, true);
+            c.setACL(cACL);
 
-          var cACL = new Parse.ACL();
-          cACL.setReadAccess(u, true);
-          cACL.setWriteAccess(createdBy, true);
-          c.setACL(cACL);
-
-          c.save().then(
-            function(comment) {
-              console.log(comment);
-            },
-            function(error) {
-              console.log(error);
-            }
-          );
-
+            c.save().then(
+              function(comment) {
+                var commentQuery = new Parse.Query(Comment);
+                commentQuery.include('createdBy');
+                return commentQuery.get(comment.id);
+              },
+              function(error) {
+                stream.error(error);
+              }
+            ).then(
+              function(comment) {
+                // comment should have user object (createdBy) included
+                stream.emit(comment);
+              },
+              function(error) {
+                stream.error(error);
+              }
+            );
+          }
         } else {
-          // Error!
+          stream.error(t.validate(props, CommentType));
         }
       },
       updateComment: function(commentId, props) {
@@ -1175,13 +1200,23 @@ var dataAPI = function() {
         );
 
       },
-      removeComment: function(commentId) {
+      removeComment: function(stream, commentId) {
         var Comment = Parse.Object.extend('Comment');
         var query = new Parse.Query(Comment);
 
         query.get(commentId).then(
           function(comment) {
-            comment.destroy();
+            return comment.destroy();
+          },
+          function(error) {
+            stream.error(error);
+          }
+        ).then(
+          function(comment) {
+            stream.emit(comment);
+          },
+          function(error) {
+            stream.error(error);
           }
         );
       },

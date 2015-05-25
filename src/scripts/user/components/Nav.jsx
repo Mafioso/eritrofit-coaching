@@ -111,7 +111,7 @@ var Nav = React.createClass({
 
     return (
       <div>
-        <div className='fixed top-0 left-0 right-0 clearfix navy bg-white z4'>
+        <div className='fixed top-0 left-0 right-0 clearfix navy z4 nav'>
           <div className='left'>
             <a
               tabIndex='2'

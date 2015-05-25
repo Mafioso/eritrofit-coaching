@@ -139,49 +139,57 @@ var CreateSubmissionModal = React.createClass({
             width: '100vw',
             height: '100vh'
           }} />
-        <div className='flex flex-column overflow-auto absolute top-0 left-0 right-0 bottom-0 p1'>
+        <div className='flex flex-column overflow-auto absolute top-0 left-0 right-0 bottom-0'>
           <div className='flex-auto'/>
           <div
-            className='flex-none bg-white border rounded p2 mb2'
-            style={{width: '100%', maxWidth: '22rem', margin: 'auto'}} >
+            className='flex-none p1'
+            style={{width: '100%', maxWidth: '24rem', margin: 'auto'}}>
+            <div className='bg-white rounded modal'>
 
-            <div className='h2 center'>Загрузка результата</div>
-
-            <form onSubmit={this.onSubmit}>
-
-              <div className='mb1'>
-                <label
-                  className='block h5 gray'>
-                  Фото
-                </label>
-                <FileUpload
-                  className='full-width'
-                  name='userpic'
-                  label='Загрузить фотографию'
-                  tabIndex={tabIndex}
-                  getValue={this.updateSelectedFile}
-                  />
+              <div className='p2 bold center border-bottom'>
+                <div>
+                  Загрузка результата
+                </div>
               </div>
 
-              <div className='mb1'>
-                <label
-                  className='block h5 gray'>
-                  Комментарий
-                </label>
-                <textarea
-                  ref='text'
-                  tabIndex={tabIndex}
-                  className='field-light full-width fit' />
-              </div>
+              <form
+                className='p2'
+                onSubmit={this.onSubmit}>
 
-              {error}
-              {submitButton}
-              {cancelButton}
+                <div className='mb1'>
+                  <label
+                    className='block h5 gray'>
+                    Фото
+                  </label>
+                  <FileUpload
+                    className='full-width'
+                    name='userpic'
+                    label='Загрузить фотографию'
+                    tabIndex={tabIndex}
+                    getValue={this.updateSelectedFile}
+                    />
+                </div>
 
-            </form>
+                <div className='mb1'>
+                  <label
+                    className='block h5 gray'>
+                    Комментарий
+                  </label>
+                  <textarea
+                    ref='text'
+                    tabIndex={tabIndex}
+                    className='field-light full-width fit' />
+                </div>
 
+                {error}
+                {submitButton}
+                {cancelButton}
+
+              </form>
+
+            </div>
           </div>
-          <div className='flex-auto'/>
+          <div className='flex-auto' style={{minHeight: '4rem'}}/>
         </div>
       </div>
     );

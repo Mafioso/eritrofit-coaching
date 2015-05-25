@@ -31,7 +31,6 @@ var Goals = React.createClass({
       data.submissions[newSubmission.get('goal').id] = [newSubmission];
     }
 
-
     data.submissionStates[newSubmission.id] = submissionState;
 
     this.setState({data: data});
@@ -117,11 +116,16 @@ var Goals = React.createClass({
         break;
     }
 
+    var userpic;
+    if (this.props.params.currentUser.get('userpicThumb')) {
+      userpic = this.props.params.currentUser.get('userpicThumb').url();
+    }
+
     return (
       <div className={containerClassName}>
         <Nav
           fullname={this.props.params.currentUser.get('fullname')}
-          userpic={this.props.params.currentUser.get('userpicThumb').url()}
+          userpic={userpic}
           currentUrl={this.props.params.currentUrl}
           currentView={this.props.params.currentView}
           />

@@ -6,11 +6,15 @@ var Password = require('../components/settings/Password.jsx');
 
 var Settings = React.createClass({
   render: function() {
+    var userpic;
+    if (this.props.params.currentUser.get('userpicThumb')) {
+      userpic = this.props.params.currentUser.get('userpicThumb').url();
+    }
     return (
       <div className='cards'>
         <Nav
           fullname={this.props.params.currentUser.get('fullname')}
-          userpic={this.props.params.currentUser.get('userpicThumb').url()}
+          userpic={userpic}
           currentUrl={this.props.params.currentUrl}
           currentView={this.props.params.currentView}
           />
@@ -20,7 +24,7 @@ var Settings = React.createClass({
         <UserInfo
           currentUrl={this.props.currentUrl}
           fullname={this.props.params.currentUser.get('fullname')}
-          userpic={this.props.params.currentUser.get('userpicThumb').url()} />
+          userpic={userpic} />
         <Password />
       </div>
     );
