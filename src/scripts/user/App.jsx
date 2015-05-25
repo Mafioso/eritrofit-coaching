@@ -47,7 +47,7 @@ var App = React.createClass({
   getInitialState: function() {
     return {
       currentUrl: window.location.hash.substring(1),
-      view: 'DEFAULT',
+      view: '',
       newMessages: {
         comments: {},
         messages: []

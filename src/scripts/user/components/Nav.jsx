@@ -127,7 +127,7 @@ var Nav = React.createClass({
                   type='button'
                   className='h5 button py1 m0 button-transparent'
                   onClick={this.toggleMode}>
-                  <Userpic src={this.props.userpic} /> &#9662;
+                  <Userpic src={this.props.userpic} /> Меню &#9662;
                 </button>
               </div>
             </div>
