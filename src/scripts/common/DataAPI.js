@@ -624,6 +624,7 @@ var dataAPI = function() {
 
             var submissionQuery = new Parse.Query(Submission);
             submissionQuery.containedIn('goal', goals);
+            submissionQuery.equalTo('createdBy', u);
             submissionQuery.ascending('createdAt');
             return submissionQuery.find();
           },
@@ -685,6 +686,7 @@ var dataAPI = function() {
             result.goal = goal;
             var submissionQuery = new Parse.Query(Submission);
             submissionQuery.equalTo('goal', goal);
+            submissionQuery.equalTo('createdBy', u);
             submissionQuery.ascending('createdAt');
             return submissionQuery.find();
           },

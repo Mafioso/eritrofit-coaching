@@ -1,3 +1,5 @@
+'use strict';
+
 var _ = require('underscore');
 var Image = require('parse-image');
 
@@ -48,6 +50,7 @@ Parse.Cloud.define('getDefaultTrackData', function(request, response) {
 
       var submissionQuery = new Parse.Query(Submission);
       submissionQuery.containedIn('goal', goals);
+      submissionQuery.equalTo('createdBy', user);
       submissionQuery.ascending('createdAt');
       return submissionQuery.find();
     },
@@ -220,10 +223,8 @@ Parse.Cloud.beforeSave('Submission', function(request, response) {
 
 // add submission state, that can be edited only by Authors
 Parse.Cloud.afterSave('Submission', function(request) {
-  // request.object - submission
   // create a new SubmissionState entry if there is no such record
   var SubmissionState = Parse.Object.extend('SubmissionState');
-  var Submission = Parse.Object.extend('Submission');
   var query = new Parse.Query(SubmissionState);
 
   query.equalTo('submission', request.object);
@@ -242,6 +243,7 @@ Parse.Cloud.afterSave('Submission', function(request) {
         acl.setRoleReadAccess('Author', true);
         submissionState.setACL(acl);
 
+        Parse.Cloud.useMasterKey();
         submissionState.save();
       }
     }

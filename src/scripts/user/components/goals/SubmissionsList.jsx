@@ -26,7 +26,7 @@ var SubmissionsList = React.createClass({
     });
 
     return (
-      <div>
+      <div className='mt1'>
         {submissions}
       </div>
     );

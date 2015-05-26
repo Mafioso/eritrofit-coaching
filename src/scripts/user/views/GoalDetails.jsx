@@ -115,7 +115,7 @@ var GoalDetails = React.createClass({
                 showCreateSubmissionModal={self.showCreateSubmissionModal}
                 finishAt={self.state.data.goal.get('finishAt')} >
 
-                <div className='py1 px2 border-top h4'>
+                <div className='py1 px2 border-top h4 mt1' style={{paddingTop: '1rem'}}>
                   Результатов пока нет
                 </div>
 

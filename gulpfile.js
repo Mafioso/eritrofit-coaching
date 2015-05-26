@@ -113,7 +113,7 @@ gulp.task('default', ['clean'], function(callback) {
   runSequence('styles', ['clientApp', 'coachApp', 'html', 'images', 'serve'], callback);
 });
 
-gulp.task('build', ['clean'], function(callback) {
+gulp.task('deploy', ['clean'], function(callback) {
   runSequence('styles', ['buildClientApp', 'clientHtml', 'images'], callback);
 });
 
