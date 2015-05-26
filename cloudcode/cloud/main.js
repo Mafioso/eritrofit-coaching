@@ -257,7 +257,7 @@ Parse.Cloud.afterDelete('Submission', function(request) {
   var query = new Parse.Query(SubmissionState);
 
   query.equalTo('submission', request.object);
-
+  Parse.Cloud.useMasterKey();
   query.find().then(
     function(submissionStates) {
       _.forEach(submissionStates, function(submissionState) {
