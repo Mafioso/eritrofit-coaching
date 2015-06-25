@@ -224,27 +224,33 @@ Parse.Cloud.beforeSave('Submission', function(request, response) {
 // add submission state, that can be edited only by Authors
 Parse.Cloud.afterSave('Submission', function(request) {
   // create a new SubmissionState entry if there is no such record
+  Parse.Cloud.useMasterKey();
+  console.log("ADASDASDASD");
   var SubmissionState = Parse.Object.extend('SubmissionState');
   var query = new Parse.Query(SubmissionState);
 
   query.equalTo('submission', request.object);
-
+  console.log("before query");
   query.find().then(
     function(submissionStates) {
+      console.log("before cond");
       if (submissionStates.length === 0) {
-
+        console.log("after cond");
         var submissionState = new SubmissionState();
         submissionState.set('submission', request.object);
         submissionState.set('isApproved', false);
-
         var acl = new Parse.ACL();
-        acl.setReadAccess(request.object.get('createdBy'), true);
-        acl.setRoleWriteAccess('Author', true);
-        acl.setRoleReadAccess('Author', true);
-        submissionState.setACL(acl);
-
-        Parse.Cloud.useMasterKey();
-        submissionState.save();
+        var roleQuery = new Parse.Query(Parse.Role);
+        roleQuery.equalTo('name', 'Author');
+        roleQuery.find().then(function(payload){
+          var role = payload[0];
+          acl.setReadAccess(request.object.get('createdBy'), true);
+          acl.setRoleWriteAccess(role, true);
+          acl.setRoleReadAccess(role, true);
+          submissionState.setACL(acl);
+          console.log("befor save!");
+          submissionState.save();
+        });
       }
     }
   );
@@ -353,5 +359,88 @@ Parse.Cloud.afterDelete('Track', function(request) {
       });
     }
   );
+
+});
+
+Parse.Cloud.beforeSave('UserTrackMap', function(request, response){
+  var UTMap = Parse.Object.extend('UserTrackMap');
+  var Track = Parse.Object.extend('Track');
+
+  var utMapQuery = new Parse.Query(UTMap);
+  utMapQuery.find().then(function(payload){
+    
+  });
+  response.success();
+
+});
+
+Parse.Cloud.afterSave('Measurement', function(request){
+  var Track = Parse.Object.extend('Track');
+  var UTM = Parse.Object.extend('UserTrackMap');
+  var measurement = request.object;
+
+  var t = new Track();
+  t.id = measurement.get('track').id;
+
+  console.log('is updated: '+measurement.get('updated'));
+  var utmQuery = new Parse.Query(UTM);
+  utmQuery.equalTo('track', t);
+  utmQuery.find().then(function(payload){
+    var utm = payload[0];
+    var oldVal;
+    var total = utm.get('total');
+    if(!measurement.get('updated')){
+      total++;
+    }else{
+      oldVal = measurement.get('old');
+      var avg = utm.get('average');
+      var newVal = measurement.get('value');
+      var newAvg  = avg + (newVal - oldVal)/(total);
+      utm.set('average', newAvg);
+      utm.save();
+      return;
+    }
+    var old = utm.get('average');
+    console.log('old: '+old);
+    console.log('new measurement: '+measurement.get('value'));
+    var newOne = old + (measurement.get('value') - old)/(total);
+    utm.set('total', total);
+    utm.set('average', newOne);
+    utm.save();
+  });
+});
+
+Parse.Cloud.afterDelete('Measurement', function(request) {
+  var UTM = Parse.Object.extend('UserTrackMap');
+  var Track = Parse.Object.extend('Track');
+  var measurement = request.object;
+
+  var u = request.user;
+  var t = new Track();
+  t.id = measurement.get('track').id;
+
+
+  var utmQuery = new Parse.Query(UTM);
+  utmQuery.equalTo('user', u);
+  utmQuery.equalTo('track', t);
+
+  utmQuery.first().then(function(utm){
+    console.log('FOUND!');
+    var total = utm.get('total');
+    var avg = utm.get('average');
+    total--;
+    if(total <= 0){
+      avg = 0;
+      total = 0;
+    }else{
+      avg = (avg*(total+1) - measurement.get('value'))/total;
+    }
+    console.log('average: '+avg);
+    console.log('total: '+total);
+    utm.set('total', total);
+    utm.set('average', avg);
+    utm.save();
+  });
+
 
 });

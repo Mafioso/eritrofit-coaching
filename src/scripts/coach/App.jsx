@@ -2,8 +2,7 @@
 
 window.React = require('react');
 window.Parse = require('parse').Parse;
-Parse.initialize('4ylwbGhxEbyh0qVaH8i2M59ZsRK07JP7mDK9M5rV', 'xvVmKJk9Jumt0i94JTtWLibWRFLCctgh2UfYZQf1');
-
+Parse.initialize("b6YvZJi26wQdC3spp2hjq7b2eJhyrMVtaXYLUymu", "gtfl1go7Nh1bmmbx6NQTUctKbBPDquJed0F0EV7F");
 var moment = require('moment');
 var _ = require('lodash');
 var Kefir = require('kefir');
@@ -39,6 +38,11 @@ require('../common/DataAPI.js').call();
 // });
 
 var App = React.createClass({
+  getInitialState: function() {
+    return {
+      logged: false 
+    };
+  },
   createUsers: function(e) {
     e.preventDefault();
 
@@ -76,6 +80,7 @@ var App = React.createClass({
     var self = this;
     var User = Parse.Object.extend('User');
     var uquery = new Parse.Query(User);
+    console.log("uid: "+Parse.User.current().id);
     uquery.find().then(
       function(users) {
         var uids = _.map(users, function(u) { return u.id; });
@@ -91,11 +96,53 @@ var App = React.createClass({
         uids);
       },
       function(error) {
+        console.log("CAN NOT FIND USERS");
         console.log(error);
       }
     );
   },
+  createTrack: function(e) {
+    e.preventDefault();
+    var self = this;
+    var User = Parse.Object.extend('User');
+    var uquery = new Parse.Query(User);
+    console.log("uid: "+Parse.User.current().id);
+    uquery.find().then(
+      function(users) {
+        var uids = _.map(users, function(u) { return u.id; });
+        DataAPI.createTrack({
+          title: self.refs.trackTitle.getDOMNode().value,
+          unit: self.refs.trackUnit.getDOMNode().value,
+          createdBy: Parse.User.current().id,
+          allowUpload: true
+        },
+        uids, self.refs.trackTheme.getDOMNode().value, self.refs.trackType.getDOMNode().value);
+      },
+      function(error) {
+        console.log("CAN NOT FIND USERS");
+        console.log(error);
+      }
+    );
+  },  
+  componentWillMount: function() {
+    var self = this;
+    Parse.User.logIn("user112", "123", {
+      success: function(obj){
+        console.log("LOGGED");
+        self.setState({
+          logged: true
+        });
+      }, error: function(obj, err){
+        console.log(err.message);
+      }
+    });
+  },
   render: function() {
+    if(!this.state.logged) {
+      console.log("LOGGING...");
+      return (<div>CHILL OUT PARTNA</div>);
+    }
+    console.log("component is rendering");
     return (
       <div className='p4 container'>
         <form className='p2 border-bottom' onSubmit={this.createUsers}>
@@ -136,6 +183,24 @@ var App = React.createClass({
           </div>
           <button className='button bg-blue white' type='submit'>
             Создать цель
+          </button>
+        </form>
+        <form className='p2 border-bottom' onSubmit={this.createTrack}>
+          <div className='bold mb1'>Создать трек для всех</div>
+          <div className='mb1'>
+            <input type='text' className='field-light full-width' ref='trackTitle' placeholder='title' />
+          </div>
+          <div className='mb1'>
+            <input type='text' className='field-light full-width' ref='trackUnit' placeholder='unit' />
+          </div>
+          <div className='mb1'>
+            <input type='text' className='field-light full-width' ref='trackTheme' placeholder='theme' />
+          </div>
+          <div className='mb1'>
+            <input type='text' className='field-light full-width' ref='trackType' placeholder='type' />
+          </div>
+          <button className='button bg-blue white' type='submit'>
+            Создать Трек
           </button>
         </form>
       </div>
