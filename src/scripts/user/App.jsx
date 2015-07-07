@@ -21,6 +21,7 @@ var Settings = require('./views/Settings.jsx');
 var Tracks = require('./views/Tracks.jsx');
 var Chart = require('./views/Chart.jsx');
 var Messages = require('./views/Messages.jsx');
+var Timeline = require('./views/Timeline.jsx');
 
 var ModeSwitch = require('../common/components/ModeSwitch.jsx');
 var Shell = require('../common/components/Shell.jsx');
@@ -44,6 +45,7 @@ require('./stores/userStore');
 require('./stores/trackStore');
 require('./stores/messageStore');
 require('./stores/measurementStore');
+require('./stores/timelineStore');
 
 var reloadNewMessages = true;
 
@@ -171,6 +173,7 @@ var App = React.createClass({
           <Messages key={routerStore.views.MESSAGES} params={params} />
           <Settings key={routerStore.views.SETTINGS} params={params} />
           <Tracks key={routerStore.views.TRACKS} params={params} />
+          <Timeline key={routerStore.views.TIMELINE} params={params} />
           <Shell key={routerStore.views.NOT_FOUND}>
             <div>Nothing found</div>
           </Shell>

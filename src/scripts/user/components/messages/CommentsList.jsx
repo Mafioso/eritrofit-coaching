@@ -32,7 +32,8 @@ var CommentsList = React.createClass({
         {body}
         <CreateComment
           messageId={this.props.messageId}
-          userId={this.props.userId} />
+          userId={this.props.userId} 
+          author={this.props.author}/>
       </div>
     );
   }

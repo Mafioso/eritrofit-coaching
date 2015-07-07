@@ -754,6 +754,7 @@ var dataAPI = function() {
           s.set('createdBy', u);
           s.set('text', props.text);
           s.set('file', new Parse.File('submission.jpg', props.file));
+          s.set('isApproved', false);
 
           var sACL = new Parse.ACL();
           sACL.setReadAccess(u, true);
@@ -786,6 +787,52 @@ var dataAPI = function() {
             submission.destroy();
           }
         );
+      },
+      getPendingSubmissions: function(emitter){
+        var SubmissionState = Parse.Object.extend('SubmissionState');
+        var ssQuery = new Parse.Query(SubmissionState);
+        ssQuery.equalTo('isApproved', false);
+
+        ssQuery.find().then(function(ss){
+          var sIds = _.map(ss, function(ss){
+            return ss.get('submission').id;
+          });
+
+          var sq = new Parse.Query(Parse.Object.extend('Submission'));
+
+          sq.containedIn('objectId', sIds);
+          sq.include('createdBy');
+          sq.include('goal');
+
+          sq.find().then(function(submissions){
+            emitter.emit(submissions);
+          })
+
+        })  
+      },
+
+      approveSubmission: function(id, stream){
+        var Submission = Parse.Object.extend('Submission');
+        var ssq = new Parse.Query(Parse.Object.extend('SubmissionState'));
+
+        var s = new Submission();
+        s.id = id;
+
+        ssq.equalTo('submission', s);
+        ssq.first().then(function(ss){
+          ss.set('isApproved', true);
+          ss.save(
+            {
+              success: function(ss){
+                stream.emit(ss.get('submission').id);
+              }, error: function(obj, error){
+                console.log('error occured');
+              } 
+            }
+          );
+
+          
+        });
       },
 
       //////////////////////////////////////////////////////////////////////
@@ -827,6 +874,7 @@ var dataAPI = function() {
           m.save().then(
             function(message) {
               if (recipients.length > 0) {
+                console.log('recs: '+recipients);
                 self.addMessageRecipients(message.id, recipients);
               }
             }, function(error) {
@@ -836,6 +884,32 @@ var dataAPI = function() {
         } else {
           console.log(t.validate(props, MessageType));
         }
+      },
+      commentResponse: function(payload, stream){
+        var t = 'Response to comment';
+        var publishAt = new Date();
+        var createdBy = Parse.User.current().id;
+        var cId = payload.cId;
+        for(var prop in payload){
+          console.log(prop+': '+payload[prop]);
+        }
+        DataAPI.createMessage({
+          title: t,
+          text: payload.text,
+          publishAt: publishAt,
+          createdBy: createdBy
+        }, [payload.uId]);
+        Parse.Cloud.run('commentResponse', {
+          commentId: cId
+        }).then(
+          function(s) {
+            stream.emit(s);
+          },
+          function(e) {
+            stream.error(e);
+            console.log(e);
+          }
+        );
       },
       updateMessage: function(messageId, props) {
         var Message = Parse.Object.extend('Message');
@@ -927,6 +1001,9 @@ var dataAPI = function() {
         var u = new User();
         u.id = recipient;
 
+        console.log('mid: '+m.id);
+        console.log('uid: '+u.id);
+
         var query = new Parse.Query(UMMap);
 
         query.equalTo('message', m);
@@ -956,6 +1033,7 @@ var dataAPI = function() {
       },
       addMessageRecipients: function(messageId, recipients) {
         var self = this;
+
         _.forEach(recipients, function(recipient) {
           self.addMessageRecipient(messageId, recipient);
         });
@@ -1112,6 +1190,8 @@ var dataAPI = function() {
         ).then(
           function(comments) {
             _.forEach(comments, function(comment) {
+              console.log('commentQuery DataAPI');
+              console.log('username: '+comment.get('createdBy').get('username'));
               if (result.comments[comment.get('message').id]) {
                 result.comments[comment.get('message').id].push(comment);
               } else {
@@ -1145,7 +1225,6 @@ var dataAPI = function() {
             var Comment = Parse.Object.extend('Comment');
             var Message = Parse.Object.extend('Message');
             var User = Parse.Object.extend('User');
-
             var c = new Comment();
             var m = new Message();
             var u = new User();
@@ -1159,9 +1238,11 @@ var dataAPI = function() {
             c.set('message', m);
             c.set('text', props.text);
             c.set('createdBy', createdBy);
+            c.set('isReadByAuthor', false);
 
             var cACL = new Parse.ACL();
             cACL.setReadAccess(u, true);
+            cACL.setReadAccess(createdBy, true);
             cACL.setWriteAccess(createdBy, true);
             c.setACL(cACL);
 
@@ -1228,7 +1309,19 @@ var dataAPI = function() {
           }
         );
       },
-
+      getUnreadComments: function(stream){
+        var Comment = Parse.Object.extend('Comment');
+        var commentQuery = new Parse.Query(Comment);
+        commentQuery.equalTo('isReadByAuthor', false);
+        commentQuery.include('createdBy');
+        commentQuery.include('message');
+        commentQuery.descending('createdAt');
+        commentQuery.find().then(
+          function(comments){
+            stream.emit(comments);
+          }
+        )
+      },
       //////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////
       //////////////////////// Tracks & Measurements ///////////////////////
@@ -1520,6 +1613,7 @@ var dataAPI = function() {
           m.set('createdBy', createdBy);
           m.set('date', date);
           m.set('updated', false);
+          m.set('isReadByAuthor', false);
 
           var mACL = new Parse.ACL();
           mACL.setReadAccess(user, true);
@@ -1532,10 +1626,7 @@ var dataAPI = function() {
           m.save().then(
             function(measurement) {
               console.log(measurement);
-              console.log('wtf?');
               emitter.emit(measurement);
-              console.log('here we are!');
-              //updateRes.emit(measurement);
             },
             function(error) {
               console.log(error);
@@ -1735,6 +1826,23 @@ var dataAPI = function() {
           emitter.emit(measurements);
         });
       },
+      getNewMeasurements: function(stream){
+        var Measurement = Parse.Object.extend('Measurement');
+        var measurementQuery = new Parse.Query(Measurement);
+
+        measurementQuery.equalTo('isReadByAuthor', false);
+        measurementQuery.include('track');
+        measurementQuery.include('createdBy');
+        measurementQuery.include('user');
+        measurementQuery.descending('createdAt');
+
+        measurementQuery.find().then(function(measurements){
+          stream.emit(measurements);
+        }, function(obj, error){
+
+          console.log(error.message);
+        });  
+      },
       getMeasurements: function(tracks, uId, emitter){
 
         for(var i=0; i<tracks.length; i++){
@@ -1758,6 +1866,15 @@ var dataAPI = function() {
           emitter.emit(measurements);
         });
         }
+      },
+      readMeasurement: function(id){
+        Parse.Cloud.run('readMeasurement', 
+          {mId: id}
+        ).then(function(s){
+          
+        }, function(e){
+          
+        });
       }
     };
   }
