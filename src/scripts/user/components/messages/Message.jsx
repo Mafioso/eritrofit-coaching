@@ -53,7 +53,8 @@ var Message = React.createClass({
             <CommentsList
               userId={this.props.userId}
               messageId={this.props.data.id}
-              data={this.props.comments} />
+              data={this.props.comments} 
+              author={this.props.data.get('createdBy').id}/>
           </div>
         </div>
       </div>

@@ -22,7 +22,9 @@ var routerStore = new Store(function() {
     TRACKS: '/tracks',
     TRACK_DETAILS: '/tracks/:track',
     SETTINGS: '/settings',
-    NOT_FOUND: '/404'
+    NOT_FOUND: '/404',
+    TEST: '/test',
+    TIMELINE: '/timeline'
   };
   self.views = {
     INDEX: 'INDEX',
@@ -35,7 +37,9 @@ var routerStore = new Store(function() {
     TRACKS: 'TRACKS',
     TRACK_DETAILS: 'TRACK_DETAILS',
     SETTINGS: 'SETTINGS',
-    NOT_FOUND: 'NOT_FOUND'
+    NOT_FOUND: 'NOT_FOUND',
+    TEST: 'TEST',
+    TIMELINE: 'TIMELINE'
   };
 
   var matchers = [];

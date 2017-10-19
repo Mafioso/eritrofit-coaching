@@ -1,5 +1,8 @@
 {
-  "dependencies": {},
+  "dependencies": {
+    "d3-tip": "^0.6.7",
+    "react-d3": "^0.3.1"
+  },
   "devDependencies": {
     "basscss": "^6.0.2",
     "browserify": "^6.2.0",

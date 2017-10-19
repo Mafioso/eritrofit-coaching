@@ -2,7 +2,8 @@
 
 window.React = require('react/addons');
 window.Parse = require('parse').Parse;
-Parse.initialize('4ylwbGhxEbyh0qVaH8i2M59ZsRK07JP7mDK9M5rV', 'xvVmKJk9Jumt0i94JTtWLibWRFLCctgh2UfYZQf1');
+Parse.initialize("b6YvZJi26wQdC3spp2hjq7b2eJhyrMVtaXYLUymu", 
+         "gtfl1go7Nh1bmmbx6NQTUctKbBPDquJed0F0EV7F");
 
 var moment = require('moment');
 require('moment/locale/ru');
@@ -18,13 +19,17 @@ var Login = require('./views/Login.jsx');
 var LoginResetPassword = require('./views/LoginResetPassword.jsx');
 var Settings = require('./views/Settings.jsx');
 var Tracks = require('./views/Tracks.jsx');
+var Chart = require('./views/Chart.jsx');
 var Messages = require('./views/Messages.jsx');
+var Timeline = require('./views/Timeline.jsx');
 
 var ModeSwitch = require('../common/components/ModeSwitch.jsx');
 var Shell = require('../common/components/Shell.jsx');
 var Portal = require('../common/components/Portal.jsx');
 var TimeoutTransitionGroup = require('../common/components/TimeoutTransitionGroup.jsx');
 var NewMessagesModal = require('./components/messages/NewMessagesModal.jsx');
+var TracksList = require('./components/tracks/TracksList.jsx');
+var FormButton = require('./components/FormButton.jsx');
 
 /////////////////////////////// STREAMS //////////////////////////////
 var routerActionstreams = require('./streams/routerStreams').actionstreams;
@@ -39,6 +44,8 @@ require('./stores/goalsStore');
 require('./stores/userStore');
 require('./stores/trackStore');
 require('./stores/messageStore');
+require('./stores/measurementStore');
+require('./stores/timelineStore');
 
 var reloadNewMessages = true;
 
@@ -166,11 +173,11 @@ var App = React.createClass({
           <Messages key={routerStore.views.MESSAGES} params={params} />
           <Settings key={routerStore.views.SETTINGS} params={params} />
           <Tracks key={routerStore.views.TRACKS} params={params} />
-
+          <Timeline key={routerStore.views.TIMELINE} params={params} />
           <Shell key={routerStore.views.NOT_FOUND}>
             <div>Nothing found</div>
           </Shell>
-
+          <Chart key={routerStore.views.TEST} params={params} />
         </ModeSwitch>
 
         <Portal>

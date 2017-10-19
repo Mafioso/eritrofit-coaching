@@ -280,9 +280,10 @@ var dataAPI = function() {
           publishAt: t.Dat,
           createdBy: t.Str
         });
-
+        console.log("uid: "+Parse.User.current().id);
+        console.log('befor validation');
         if (t.validate(goal, GoalType).isValid()) {
-
+          console.log('VALID!');
           if (!moment(goal.publishAt).isAfter(moment(goal.finishAt), 'day')) {
 
             var Goal = Parse.Object.extend('Goal');
@@ -300,22 +301,28 @@ var dataAPI = function() {
             g.set('publishAt', goal.publishAt);
             g.set('createdBy', u);
 
-
+            //setting goal ACL
             var gACL = new Parse.ACL();
             gACL.setPublicReadAccess(true);
-            gACL.setRoleWriteAccess('Author', true);
-            g.setACL(gACL);
+            //let's get a role first
+            var roleQuery = new Parse.Query(Parse.Role);
+            roleQuery.equalTo('name', 'Author');
+            roleQuery.first().then(function(role){
+              gACL.setRoleWriteAccess(role, true);
+              g.setACL(gACL);
+              console.log("INSIDE CREATING A GOAL, MUTHAFUKKA!");
+              g.save().then(function(payload) {
 
-            g.save().then(function(payload) {
+                if (recipients.length > 0) {
+                  self.addGoalRecipients(payload.id, recipients);
+                }
 
-              if (recipients.length > 0) {
-                self.addGoalRecipients(payload.id, recipients);
-              }
+              }, function(error) {
+                console.log("WTF?");
+                console.log(error);
+              });
 
-            }, function(error) {
-              console.log(error);
             });
-
           } else {
             // ERROR!
           }
@@ -612,7 +619,6 @@ var dataAPI = function() {
             goalQuery.greaterThanOrEqualTo('finishAt', date);
             goalQuery.lessThanOrEqualTo('publishAt', date);
             goalQuery.ascending('publishAt');
-
             return goalQuery.find();
           },
           function(error) {
@@ -748,6 +754,7 @@ var dataAPI = function() {
           s.set('createdBy', u);
           s.set('text', props.text);
           s.set('file', new Parse.File('submission.jpg', props.file));
+          s.set('isApproved', false);
 
           var sACL = new Parse.ACL();
           sACL.setReadAccess(u, true);
@@ -780,6 +787,52 @@ var dataAPI = function() {
             submission.destroy();
           }
         );
+      },
+      getPendingSubmissions: function(emitter){
+        var SubmissionState = Parse.Object.extend('SubmissionState');
+        var ssQuery = new Parse.Query(SubmissionState);
+        ssQuery.equalTo('isApproved', false);
+
+        ssQuery.find().then(function(ss){
+          var sIds = _.map(ss, function(ss){
+            return ss.get('submission').id;
+          });
+
+          var sq = new Parse.Query(Parse.Object.extend('Submission'));
+
+          sq.containedIn('objectId', sIds);
+          sq.include('createdBy');
+          sq.include('goal');
+
+          sq.find().then(function(submissions){
+            emitter.emit(submissions);
+          })
+
+        })  
+      },
+
+      approveSubmission: function(id, stream){
+        var Submission = Parse.Object.extend('Submission');
+        var ssq = new Parse.Query(Parse.Object.extend('SubmissionState'));
+
+        var s = new Submission();
+        s.id = id;
+
+        ssq.equalTo('submission', s);
+        ssq.first().then(function(ss){
+          ss.set('isApproved', true);
+          ss.save(
+            {
+              success: function(ss){
+                stream.emit(ss.get('submission').id);
+              }, error: function(obj, error){
+                console.log('error occured');
+              } 
+            }
+          );
+
+          
+        });
       },
 
       //////////////////////////////////////////////////////////////////////
@@ -821,6 +874,7 @@ var dataAPI = function() {
           m.save().then(
             function(message) {
               if (recipients.length > 0) {
+                console.log('recs: '+recipients);
                 self.addMessageRecipients(message.id, recipients);
               }
             }, function(error) {
@@ -830,6 +884,32 @@ var dataAPI = function() {
         } else {
           console.log(t.validate(props, MessageType));
         }
+      },
+      commentResponse: function(payload, stream){
+        var t = 'Response to comment';
+        var publishAt = new Date();
+        var createdBy = Parse.User.current().id;
+        var cId = payload.cId;
+        for(var prop in payload){
+          console.log(prop+': '+payload[prop]);
+        }
+        DataAPI.createMessage({
+          title: t,
+          text: payload.text,
+          publishAt: publishAt,
+          createdBy: createdBy
+        }, [payload.uId]);
+        Parse.Cloud.run('commentResponse', {
+          commentId: cId
+        }).then(
+          function(s) {
+            stream.emit(s);
+          },
+          function(e) {
+            stream.error(e);
+            console.log(e);
+          }
+        );
       },
       updateMessage: function(messageId, props) {
         var Message = Parse.Object.extend('Message');
@@ -921,6 +1001,9 @@ var dataAPI = function() {
         var u = new User();
         u.id = recipient;
 
+        console.log('mid: '+m.id);
+        console.log('uid: '+u.id);
+
         var query = new Parse.Query(UMMap);
 
         query.equalTo('message', m);
@@ -950,6 +1033,7 @@ var dataAPI = function() {
       },
       addMessageRecipients: function(messageId, recipients) {
         var self = this;
+
         _.forEach(recipients, function(recipient) {
           self.addMessageRecipient(messageId, recipient);
         });
@@ -1106,6 +1190,8 @@ var dataAPI = function() {
         ).then(
           function(comments) {
             _.forEach(comments, function(comment) {
+              console.log('commentQuery DataAPI');
+              console.log('username: '+comment.get('createdBy').get('username'));
               if (result.comments[comment.get('message').id]) {
                 result.comments[comment.get('message').id].push(comment);
               } else {
@@ -1139,7 +1225,6 @@ var dataAPI = function() {
             var Comment = Parse.Object.extend('Comment');
             var Message = Parse.Object.extend('Message');
             var User = Parse.Object.extend('User');
-
             var c = new Comment();
             var m = new Message();
             var u = new User();
@@ -1153,9 +1238,11 @@ var dataAPI = function() {
             c.set('message', m);
             c.set('text', props.text);
             c.set('createdBy', createdBy);
+            c.set('isReadByAuthor', false);
 
             var cACL = new Parse.ACL();
             cACL.setReadAccess(u, true);
+            cACL.setReadAccess(createdBy, true);
             cACL.setWriteAccess(createdBy, true);
             c.setACL(cACL);
 
@@ -1222,14 +1309,26 @@ var dataAPI = function() {
           }
         );
       },
-
+      getUnreadComments: function(stream){
+        var Comment = Parse.Object.extend('Comment');
+        var commentQuery = new Parse.Query(Comment);
+        commentQuery.equalTo('isReadByAuthor', false);
+        commentQuery.include('createdBy');
+        commentQuery.include('message');
+        commentQuery.descending('createdAt');
+        commentQuery.find().then(
+          function(comments){
+            stream.emit(comments);
+          }
+        )
+      },
       //////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////
       //////////////////////// Tracks & Measurements ///////////////////////
       //////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////
 
-      createTrack: function(props, recipients) {
+      createTrack: function(props, recipients, theme, type) {
         var self = this;
         var TrackType = t.struct({
           title: t.Str,
@@ -1251,6 +1350,8 @@ var dataAPI = function() {
           track.set('unit', props.unit);
           track.set('createdBy', u);
           track.set('allowUpload', props.allowUpload);
+          track.set('theme', theme);
+          track.set('type', type);
 
           var tACL = new Parse.ACL();
           tACL.setPublicReadAccess(true);
@@ -1340,7 +1441,7 @@ var dataAPI = function() {
               utMap.set('user', u);
 
               var utMapACL = new Parse.ACL();
-              utMapACL.setReacAccess(u, true);
+              utMapACL.setReadAccess(u, true);
               utMapACL.setRoleReadAccess('Author', true);
               utMapACL.setRoleWriteAccess('Author', true);
 
@@ -1481,12 +1582,14 @@ var dataAPI = function() {
 
       },
 
-      createMeasurement: function(userId, trackId, props) {
+      createMeasurement: function(userId, trackId, props, date, emitter, updateRes) {
+        
         var MeasurementType = t.struct({
           value: t.Str,
           unit: t.Str,
           createdBy: t.Str
         });
+
 
         if (t.validate(props, MeasurementType).isValid()) {
 
@@ -1508,6 +1611,9 @@ var dataAPI = function() {
           m.set('value', props.value);
           m.set('unit', props.unit);
           m.set('createdBy', createdBy);
+          m.set('date', date);
+          m.set('updated', false);
+          m.set('isReadByAuthor', false);
 
           var mACL = new Parse.ACL();
           mACL.setReadAccess(user, true);
@@ -1516,9 +1622,11 @@ var dataAPI = function() {
           mACL.setRoleWriteAccess('Author', true);
           m.setACL(mACL);
 
+
           m.save().then(
             function(measurement) {
               console.log(measurement);
+              emitter.emit(measurement);
             },
             function(error) {
               console.log(error);
@@ -1527,22 +1635,23 @@ var dataAPI = function() {
 
         }
       },
-      updateMeasurement: function(measurementId, props) {
+      updateMeasurement: function(measurementId, value, emitter) {
         var Measurement = Parse.Object.extend('Measurement');
         var query = new Parse.Query(Measurement);
 
         query.get(measurementId).then(
           function(m) {
-
-            if (t.validate(props.value, t.Str).isValid()) {
-              m.set('value', props.value);
+            var oldVal = m.get('value');
+            if (t.validate(value, t.Str).isValid()) {
+              m.set('value', value);
+              m.set('updated', true);
+              m.set('old', oldVal);
             }
 
-            if (t.validate(props.unit, t.Str).isValid()) {
-              m.set('unit', props.unit);
-            }
-
-            m.save();
+            m.save().then(function(m){
+              
+              emitter.emit(m);
+            });
 
           },
           function(error) {
@@ -1550,13 +1659,15 @@ var dataAPI = function() {
           }
         );
       },
-      removeMeasurement: function(measurementId) {
+      removeMeasurement: function(measurementId, emitter) {
         var Measurement = Parse.Object.extend('Measurement');
         var query = new Parse.Query(Measurement);
 
         query.get(measurementId).then(
           function(m) {
-            m.destroy();
+            m.destroy().then(function(){
+              emitter.emit(m);
+            });
           }
         );
       },
@@ -1571,8 +1682,200 @@ var dataAPI = function() {
             stream.error(e);
           }
         );
-      }
+      },
 
+      getTracks: function(stream){
+        var Track = Parse.Object.extend("Track");
+        var UserTrackMap = Parse.Object.extend("UserTrackMap");
+
+
+        var utMapQuery = new Parse.Query(UserTrackMap);
+
+        var u = Parse.User.current();
+        utMapQuery.equalTo('user', u);
+        utMapQuery.find().then(function(utms){
+          var ids = _.map(utms, function(utm){
+            return utm.get('track').id;
+          });
+          return ids;
+        }).then(function(ids){
+          var q = new Parse.Query(Track);
+          q.notContainedIn('objectId', ids);
+          q.find().then(function(payload){
+            stream.emit(payload);
+          });
+        });
+      },
+      subscribeToTrack: function(tId, emitter){
+        var Track = Parse.Object.extend("Track");
+        var UTM = Parse.Object.extend("UserTrackMap");
+
+        var t = new Track();
+        var utm = new UTM();
+        var u = Parse.User.current();
+
+        t.id = tId;
+
+        utm.set('track', t);
+        utm.set('user', u);
+
+        var acl = new Parse.ACL();
+
+        var roleQuery = new Parse.Query(Parse.Role);
+        roleQuery.equalTo('name', 'Author');
+        roleQuery.find().then(function(payload){
+          var role = payload[0];
+
+          acl.setRoleWriteAccess(role, true);
+          acl.setRoleReadAccess(role, true);
+          acl.setReadAccess(u.id, true);
+          acl.setWriteAccess(u.id, true);
+
+          utm.setACL(acl);
+          utm.save().then(function(){
+            var trackQuery = new Parse.Query(Track);
+            trackQuery.get(tId).then(function(track){
+              emitter.emit(track);
+            });
+          });
+        });
+      },
+      getMyTracks: function(emitter){
+        console.log('get my tracs called')
+        var Track = Parse.Object.extend("Track");
+        var UserTrackMap = Parse.Object.extend("UserTrackMap");
+        var Measurement = Parse.Object.extend("Measurement");
+
+        var u = Parse.User.current();
+
+        var utmQuery = new Parse.Query(UserTrackMap);
+        utmQuery.equalTo('user', u);
+        var res = {tracks: [],
+                   measurements: {},
+                   utms: {}
+                  };
+
+        utmQuery.find().then(function(payload){
+          
+          _.forEach(payload, function(utm){
+            var key = utm.get('track').id;
+            var value = utm;
+            res.utms[key] = value;
+          })
+          var tIds = _.map(payload, function(utm){
+            return utm.get("track").id;
+          });
+          var q = new Parse.Query(Track);
+          q.containedIn('objectId', tIds);
+          return q.find();
+        }).then(function(tracks){
+            res.tracks = tracks;
+            var measurementQuery = new Parse.Query(Measurement);
+            measurementQuery.containedIn('track', tracks);
+            measurementQuery.equalTo('user', u);
+            return measurementQuery.find();
+        }).then(function(measurements){
+            _.forEach(measurements, function(measurement){
+                if(res.measurements[measurement.get('track').id]){
+                    res.measurements[measurement.get('track').id].push(measurement);
+                }else{
+                    res.measurements[measurement.get('track').id] = [measurement];
+                }
+            });
+            emitter.emit(res);
+        });
+      },
+      unSubscribe: function(tId, emitter){
+        console.log('from the inside');
+        var Track = Parse.Object.extend("Track");
+        var UserTrackMap = Parse.Object.extend("UserTrackMap");
+
+        var t = new Track();
+        t.id = tId;
+
+        var utMapQuery = new Parse.Query(UserTrackMap);
+        utMapQuery.equalTo('user', Parse.User.current());
+        utMapQuery.equalTo('track', t);
+        utMapQuery.find().then(function(payload){
+          payload.forEach(function(utm){
+            var utmId = utm.id;
+            utm.destroy().then(function(obj){
+              emitter.emit(tId);
+            });
+          });
+        });
+      },
+      getMeasurementsByTrack: function(tId, uId, emitter){
+        var Measurement = Parse.Object.extend('Measurement');
+        var Track = Parse.Object.extend('Track');
+        var User = Parse.Object.extend('User');
+
+        var t = new Track();
+        t.id = tId;
+
+        var u = new User();
+        u.id = uId;
+
+        var measurementQuery = new Parse.Query(Measurement);
+        measurementQuery.equalTo('track', t);
+        measurementQuery.equalTo('user', u);
+        measurementQuery.ascending('date');
+        console.log('before query');
+        measurementQuery.find().then(function(measurements){
+          console.log('after query');
+          emitter.emit(measurements);
+        });
+      },
+      getNewMeasurements: function(stream){
+        var Measurement = Parse.Object.extend('Measurement');
+        var measurementQuery = new Parse.Query(Measurement);
+
+        measurementQuery.equalTo('isReadByAuthor', false);
+        measurementQuery.include('track');
+        measurementQuery.include('createdBy');
+        measurementQuery.include('user');
+        measurementQuery.descending('createdAt');
+
+        measurementQuery.find().then(function(measurements){
+          stream.emit(measurements);
+        }, function(obj, error){
+
+          console.log(error.message);
+        });  
+      },
+      getMeasurements: function(tracks, uId, emitter){
+
+        for(var i=0; i<tracks.length; i++){
+        var Measurement = Parse.Object.extend('Measurement');
+        var Track = Parse.Object.extend('Track');
+        var User = Parse.Object.extend('User');
+
+        var t = new Track();
+        t.id = tId;
+
+        var u = new User();
+        u.id = uId;
+
+        var measurementQuery = new Parse.Query(Measurement);
+        measurementQuery.equalTo('track', t);
+        measurementQuery.equalTo('user', u);
+        measurementQuery.ascending('date');
+        console.log('before query');
+        measurementQuery.find().then(function(measurements){
+          console.log('after query');
+          emitter.emit(measurements);
+        });
+        }
+      },
+      readMeasurement: function(id){
+        Parse.Cloud.run('readMeasurement', 
+          {mId: id}
+        ).then(function(s){
+          
+        }, function(e){
+          
+        });
+      }
     };
   }
 

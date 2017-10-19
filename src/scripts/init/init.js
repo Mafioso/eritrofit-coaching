@@ -1,7 +1,8 @@
 'use strict';
 
 window.Parse = require('parse').Parse;
-Parse.initialize('4ylwbGhxEbyh0qVaH8i2M59ZsRK07JP7mDK9M5rV', 'xvVmKJk9Jumt0i94JTtWLibWRFLCctgh2UfYZQf1');
+Parse.initialize("b6YvZJi26wQdC3spp2hjq7b2eJhyrMVtaXYLUymu", 
+         "gtfl1go7Nh1bmmbx6NQTUctKbBPDquJed0F0EV7F");
 
 function createUser(email, fullname, password) {
   var user = new Parse.User();

@@ -44,7 +44,7 @@ var CreateComment = React.createClass({
       function() {
         messageStreams.actionstreams.createComment.emit({
           text: this.refs.commentText.getDOMNode().value,
-          userId: this.props.userId,
+          userId: this.props.author,
           createdBy: this.props.userId,
           messageId: this.props.messageId
         });

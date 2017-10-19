@@ -3,6 +3,28 @@
 var _ = require('underscore');
 var Image = require('parse-image');
 
+
+Parse.Cloud.define('commentResponse', function(request, response){
+  var cId = request.params.commentId;
+  console.log('params: '+request.params);
+  Parse.Cloud.useMasterKey();
+  var commentQuery = new Parse.Query(Parse.Object.extend('Comment'));
+  Parse.Cloud.useMasterKey();
+  commentQuery.get(cId, {
+    success: function(comment){
+      console.log('success');
+      comment.set('isReadByAuthor', true);
+
+      comment.save();
+      response.success('success');
+    }, 
+    error: function(comment, error){  
+      response.error('error');
+      console.log('error')
+    }
+  });
+});
+
 Parse.Cloud.define('getDefaultTrackData', function(request, response) {
   var user = request.user;
   var date = request.params.date;
@@ -224,27 +246,59 @@ Parse.Cloud.beforeSave('Submission', function(request, response) {
 // add submission state, that can be edited only by Authors
 Parse.Cloud.afterSave('Submission', function(request) {
   // create a new SubmissionState entry if there is no such record
+  Parse.Cloud.useMasterKey();
+  
+  var Pusher = require('cloud/pusher.js');
+  var pusher = new Pusher({
+      appId: '122736',
+      key: 'd96273fc895ad1c399c9',
+      secret: 'f956ae861905a5cc5ef2'
+  });
+  var s = request.object;
+  var context = {
+    id: s.id,
+    text: s.get('text'),
+    file: s.get('file').url(),
+    thumbnail: s.get('fileThumb').url(),
+    createdAt: s.createdAt
+  };
+
+  var sq = new Parse.Query(Parse.Object.extend('Submission'));
+  sq.include('createdBy');
+  sq.include('goal');
+  sq.get(s.id).then(function(submission){
+    context.createdBy = submission.get('createdBy').get('username');
+    context.goal = submission.get('goal').get('title');
+    for(var prop in context){
+      context[prop] = encodeURIComponent(context[prop]);
+    }
+    pusher.trigger('author_channel', 'submission', context);
+  })
   var SubmissionState = Parse.Object.extend('SubmissionState');
   var query = new Parse.Query(SubmissionState);
 
   query.equalTo('submission', request.object);
-
+  console.log("before query");
   query.find().then(
     function(submissionStates) {
+      console.log("before cond");
       if (submissionStates.length === 0) {
-
+        console.log("after cond");
         var submissionState = new SubmissionState();
         submissionState.set('submission', request.object);
         submissionState.set('isApproved', false);
-
         var acl = new Parse.ACL();
-        acl.setReadAccess(request.object.get('createdBy'), true);
-        acl.setRoleWriteAccess('Author', true);
-        acl.setRoleReadAccess('Author', true);
-        submissionState.setACL(acl);
-
-        Parse.Cloud.useMasterKey();
-        submissionState.save();
+        var roleQuery = new Parse.Query(Parse.Role);
+        roleQuery.equalTo('name', 'Author');
+        roleQuery.find().then(function(payload){
+          var role = payload[0];
+          acl.setReadAccess(request.object.get('createdBy'), true);
+          acl.setRoleWriteAccess(role, true);
+          acl.setRoleReadAccess(role, true);
+          submissionState.setACL(acl);
+          console.log("befor save!");
+          submissionState.save();
+        });
       }
     }
   );
@@ -253,6 +307,18 @@ Parse.Cloud.afterSave('Submission', function(request) {
 // remove respective submission state
 Parse.Cloud.afterDelete('Submission', function(request) {
   // remove all related SubmissionState objects after Submission removal
+  
+  var Pusher = require('cloud/pusher.js');
+  var pusher = new Pusher({
+      appId: '122736',
+      key: 'd96273fc895ad1c399c9',
+      secret: 'f956ae861905a5cc5ef2'
+  });
+  var s = request.object;
+  var context = {
+    id: s.id
+  };
+  pusher.trigger('author_channel', 'deleteSubmission', context);
   var SubmissionState = Parse.Object.extend('SubmissionState');
   var query = new Parse.Query(SubmissionState);
 
@@ -355,3 +421,211 @@ Parse.Cloud.afterDelete('Track', function(request) {
   );
 
 });
+
+Parse.Cloud.beforeSave('UserTrackMap', function(request, response){
+  var UTMap = Parse.Object.extend('UserTrackMap');
+  var Track = Parse.Object.extend('Track');
+
+  var utMapQuery = new Parse.Query(UTMap);
+  utMapQuery.find().then(function(payload){
+    
+  });
+  response.success();
+
+});
+
+Parse.Cloud.afterSave('Measurement', function(request){
+  var Track = Parse.Object.extend('Track');
+  var UTM = Parse.Object.extend('UserTrackMap');
+  var measurement = request.object;
+
+  var Pusher = require('cloud/pusher.js');
+  var pusher = new Pusher({
+      appId: '122736',
+      key: 'd96273fc895ad1c399c9',
+      secret: 'f956ae861905a5cc5ef2'
+  });
+
+  var context = {
+      id: measurement.id,
+      value: measurement.get('value'),
+      unit: measurement.get('unit')
+  };
+  var mQuery = new Parse.Query(Parse.Object.extend('Measurement'));
+  mQuery.include('track');
+  mQuery.include('createdBy');
+  mQuery.include('user');
+  mQuery.get(measurement.id).then(
+    function(m){
+      context.track = m.get('track').get('title');
+      context.user = m.get('user').get('username');
+      context.createdBy = m.get('createdBy').get('username');
+      
+      for(var i in context){
+        context[i] = encodeURIComponent(context[i]);
+      }
+
+
+      pusher.trigger('author_channel', 'measurement', context);
+    } 
+  );
+
+  var t = new Track();
+  t.id = measurement.get('track').id;
+
+  console.log('is updated: '+measurement.get('updated'));
+  var utmQuery = new Parse.Query(UTM);
+  utmQuery.equalTo('track', t);
+  utmQuery.find().then(function(payload){
+    var utm = payload[0];
+    var oldVal;
+    var total = utm.get('total');
+    if(!measurement.get('updated')){
+      total++;
+    }else{
+      oldVal = measurement.get('old');
+      var avg = utm.get('average');
+      var newVal = measurement.get('value');
+      var newAvg  = avg + (newVal - oldVal)/(total);
+      utm.set('average', newAvg);
+      utm.save();
+      return;
+    }
+    var old = utm.get('average');
+    console.log('old: '+old);
+    console.log('new measurement: '+measurement.get('value'));
+    var newOne = old + (measurement.get('value') - old)/(total);
+    utm.set('total', total);
+    utm.set('average', newOne);
+    utm.save();
+  });
+});
+
+Parse.Cloud.afterDelete('Measurement', function(request) {
+  var UTM = Parse.Object.extend('UserTrackMap');
+  var Track = Parse.Object.extend('Track');
+  var measurement = request.object;
+
+  var Pusher = require('cloud/pusher.js');
+  var pusher = new Pusher({
+      appId: '122736',
+      key: 'd96273fc895ad1c399c9',
+      secret: 'f956ae861905a5cc5ef2'
+  });
+
+  var context = {
+      id: measurement.id,
+  };
+
+  pusher.trigger('author_channel', 'deleteMeasurement', context);
+
+  var u = request.user;
+  var t = new Track();
+  t.id = measurement.get('track').id;
+
+
+  var utmQuery = new Parse.Query(UTM);
+  utmQuery.equalTo('user', u);
+  utmQuery.equalTo('track', t);
+
+  utmQuery.first().then(function(utm){
+    var total = utm.get('total');
+    var avg = utm.get('average');
+    total--;
+    if(total <= 0){
+      avg = 0;
+      total = 0;
+    }else{
+      avg = (avg*(total+1) - measurement.get('value'))/total;
+    }
+    utm.set('total', total);
+    utm.set('average', avg);
+    utm.save();
+  });
+
+
+});
+
+Parse.Cloud.afterSave('Comment', function(request){
+  var comment = request.object;
+
+  var Pusher = require('cloud/pusher.js');
+  var pusher = new Pusher({
+      appId: '122736',
+      key: 'd96273fc895ad1c399c9',
+      secret: 'f956ae861905a5cc5ef2'
+  });
+
+  if(comment.get('isReadByAuthor')){
+    pusher.trigger('author_channel', 'deleteComment', {id: comment.id});
+    return;
+  }
+  var context = {
+      id: comment.id,
+      text: comment.get('text')
+  };
+
+  var mQuery = new Parse.Query(Parse.Object.extend('Message'));
+
+  mQuery.get(comment.get('message').id).then(function(message){
+    context.message = message.get('title');
+  });
+
+
+  var userQuery = new Parse.Query(Parse.Object.extend('User'));
+  userQuery.get(comment.get('createdBy').id).then(function(user){
+    context.createdBy = user.get('username');
+    context.userId  = user.id;
+    for(var prop in context){
+      context[prop] = encodeURIComponent(context[prop]);
+    }
+    pusher.trigger('author_channel', 'comment', context);
+  });
+
+});
+
+Parse.Cloud.afterDelete('Comment', function(request){
+  var comment = request.object;
+
+  var Pusher = require('cloud/pusher.js');
+  var pusher = new Pusher({
+      appId: '122736',
+      key: 'd96273fc895ad1c399c9',
+      secret: 'f956ae861905a5cc5ef2'
+  });
+
+  var context = {
+      id: comment.id
+  };
+
+  pusher.trigger('author_channel', 'deleteComment', context);
+});
+
+Parse.Cloud.afterSave('Message', function(request){
+
+});
+
+Parse.Cloud.define('readMeasurement', function(request, response){
+  Parse.Cloud.useMasterKey();
+
+  var Measurement = Parse.Object.extend('Measurement');
+  
+  var measurementQuery = new Parse.Query(Measurement);
+
+  measurementQuery.get(request.params.mId).then(function(m){
+    m.set('isReadByAuthor', true);
+    m.save();
+    var id = m.id;
+
+    var Pusher = require('cloud/pusher.js');
+    var pusher = new Pusher({
+        appId: '122736',
+        key: 'd96273fc895ad1c399c9',
+        secret: 'f956ae861905a5cc5ef2'
+    });
+    
+    pusher.trigger('author_channel', 'deleteMeasurement', {id: id});
+    response.success('OK');
+  })
+});
+
